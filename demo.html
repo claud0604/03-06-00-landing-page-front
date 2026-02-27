@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo Preparation — APL COLOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f1ef;
+    --surface: #e9e8e5;
+    --surface2: #dddbd7;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1916;
+    --text-muted: #5c5a56;
+    --text-dim: #9b9890;
+    --accent: #a07840;
+    --accent2: #c49656;
+    --warm: rgba(160,120,64,0.10);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif KR', serif;
+    --sans: 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #2a2a2a;
+    --surface2: #222222;
+    --border: #404040;
+    --text: #e0e0e0;
+    --text-muted: #aaaaaa;
+    --text-dim: #777777;
+    --accent: #c4a484;
+    --accent2: #d4b898;
+    --warm: rgba(196,164,132,0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #1a1a1a; --surface: #2a2a2a; --surface2: #222222;
+      --border: #404040; --text: #e0e0e0; --text-muted: #aaaaaa;
+      --text-dim: #777777; --accent: #c4a484; --accent2: #d4b898;
+      --warm: rgba(196,164,132,0.12);
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 80px 24px; }
+
+  /* ─── TOP NAV ─── */
+  .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 16px; }
+
+  .back-btn, .demo-start-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none; font-size: 14px; transition: all 0.3s ease;
+  }
+  .back-btn { color: var(--text-muted); }
+  .back-btn:hover { color: var(--accent); }
+
+  .demo-start-btn {
+    padding: 10px 20px; border-radius: 8px; font-weight: 500;
+    border: none; cursor: pointer; position: relative;
+  }
+  .demo-start-btn.disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; pointer-events: none; }
+  .demo-start-btn.active { background: var(--accent); color: white; animation: bubblePop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+  .demo-start-btn.active:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  @keyframes bubblePop {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.15); }
+    70% { transform: scale(0.95); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ─── LANG SWITCHER (demo) ─── */
+  .demo-top-actions { display: flex; align-items: center; gap: 12px; }
+  .lang-switcher { position: relative; display: flex; align-items: center; }
+  .lang-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 3px;
+    background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-dropdown {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden; z-index: 200; min-width: 120px; box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+  }
+  .lang-dropdown.open { display: block; }
+  .lang-option {
+    display: block; width: 100%; padding: 10px 16px; font-family: var(--mono);
+    font-size: 12px; color: var(--text-muted); border: none; background: none;
+    cursor: pointer; text-align: left; transition: background 0.2s;
+  }
+  .lang-option:hover { background: var(--surface2); color: var(--accent); }
+  .lang-option.active { color: var(--accent); }
+
+  /* ─── THEME TOGGLE ─── */
+  .theme-toggle {
+    width: 38px; height: 22px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 11px;
+    cursor: pointer; position: relative; transition: background 0.3s, border-color 0.3s; flex-shrink: 0;
+  }
+  .theme-toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text-dim); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s;
+  }
+  [data-theme="dark"] .theme-toggle::after, .theme-toggle.light-on::after { transform: translateX(16px); background: var(--accent); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle-icon { font-size: 13px; line-height: 1; opacity: 0.5; transition: opacity 0.2s; user-select: none; }
+  .toggle-icon.active { opacity: 1; }
+
+  /* ─── HEADINGS ─── */
+  h1 { font-family: var(--serif); font-size: clamp(32px, 5vw, 48px); font-weight: 400; margin-bottom: 16px; line-height: 1.3; }
+  .subtitle { font-size: 16px; color: var(--text-muted); margin-bottom: 60px; }
+  .section { margin-bottom: 64px; }
+  h2 { font-family: var(--serif); font-size: 24px; font-weight: 400; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+
+  /* ─── PROCESS CARDS ─── */
+  .process-grid { display: grid; gap: 24px; }
+  .process-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .process-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .process-card.highlight-card {
+    background: linear-gradient(135deg, rgba(160,120,64,0.06) 0%, var(--surface) 100%);
+    border: 2px solid var(--accent); box-shadow: 0 2px 12px rgba(160,120,64,0.12);
+  }
+  .process-card.highlight-card:hover { box-shadow: 0 4px 24px rgba(160,120,64,0.2); }
+  .process-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; margin-bottom: 12px; }
+  .process-title { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  .process-desc { font-size: 15px; color: var(--text-muted); line-height: 1.7; }
+
+  /* ─── DEMO INFO ─── */
+  .demo-info {
+    background: var(--warm); border: 1px solid rgba(160,120,64,0.2);
+    border-radius: 12px; padding: 32px; margin-bottom: 40px;
+  }
+  .demo-info h3 { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--accent); }
+  .demo-features { display: grid; gap: 12px; }
+  .demo-feature { display: flex; align-items: flex-start; gap: 12px; font-size: 15px; }
+  .demo-feature::before { content: '✓'; color: var(--accent); font-weight: 600; flex-shrink: 0; }
+
+  /* ─── DIFFERENCE BOX ─── */
+  .difference-box {
+    background: linear-gradient(135deg, rgba(160,120,64,0.06) 0%, transparent 60%), var(--surface);
+    border: 1px solid var(--accent); border-radius: 12px; padding: 32px; margin-top: 40px;
+  }
+  .difference-box h3 { font-family: var(--serif); font-size: 22px; font-weight: 400; margin-bottom: 20px; color: var(--accent); }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+  .comparison-item h4 { font-size: 14px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; opacity: 0.7; }
+  .comparison-item ul { list-style: none; font-size: 14px; line-height: 2; }
+  .comparison-item ul li { padding-left: 16px; position: relative; }
+  .comparison-item ul li::before { content: '—'; position: absolute; left: 0; color: var(--text-muted); }
+  .comparison-item.highlight ul li::before { content: '✦'; color: var(--accent); }
+
+  /* ─── CHECKLIST ─── */
+  .checklist { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; position: relative; }
+  .progress-indicator { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 20px; text-align: center; }
+  .checklist-step { display: none; animation: fadeIn 0.4s ease; position: relative; min-height: 200px; }
+  .checklist-step.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .checklist-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 40px 20px; }
+  .checklist-image { width: 120px; height: 120px; border-radius: 12px; background: linear-gradient(135deg, var(--warm) 0%, var(--surface2) 100%); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 48px; margin-bottom: 8px; }
+  .checklist-question { font-size: 18px; text-align: center; font-weight: 400; line-height: 1.6; max-width: 500px; }
+
+  .check-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid var(--accent); background: var(--bg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease; position: absolute; top: -34px; right: 16px; z-index: 10;
+  }
+  .check-btn:hover { background: var(--warm); transform: scale(1.08); box-shadow: 0 4px 12px rgba(160,120,64,0.2); }
+  .check-btn::after { content: '✓'; font-size: 28px; color: var(--accent); font-weight: bold; opacity: 0; transform: scale(0); transition: all 0.3s ease; }
+  .check-btn:hover::after { opacity: 0.3; transform: scale(1); }
+  .check-btn.checked { background: var(--accent); border-color: var(--accent); animation: checkPulse 0.4s ease; }
+  .check-btn.checked::after { opacity: 1; transform: scale(1); color: white; }
+  @keyframes checkPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+  .completion-message {
+    display: none; text-align: center; padding: 20px;
+    background: var(--warm); border-radius: 8px;
+    font-size: 16px; font-weight: 500; color: var(--accent); animation: fadeIn 0.5s ease;
+  }
+  .completion-message.show { display: block; }
+
+  /* ─── CTA BOX ─── */
+  .cta-box { background: var(--accent); color: white; border-radius: 12px; padding: 48px 40px; text-align: center; margin-top: 64px; }
+  .cta-box h3 { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 16px; }
+  .cta-box p { font-size: 15px; opacity: 0.9; margin-bottom: 32px; }
+  .btn-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 500; transition: all 0.2s; }
+  .btn-primary { background: white; color: var(--accent); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .btn-secondary { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+
+  @media (max-width: 768px) {
+    .comparison { grid-template-columns: 1fr; }
+    .container { padding: 60px 20px; }
+    .top-nav { flex-direction: column; align-items: stretch; }
+    .demo-start-btn { justify-content: center; }
+    .demo-top-actions { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="top-nav">
+    <a href="index.html" class="back-btn" data-i18n="demo_back">← Back to Main</a>
+    <div class="demo-top-actions">
+      <div class="lang-switcher">
+        <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()">EN</button>
+        <div class="lang-dropdown" id="langDropdown">
+          <button class="lang-option active" onclick="setLang('en')">EN — English</button>
+          <button class="lang-option" onclick="setLang('ko')">KO — 한국어</button>
+          <button class="lang-option" onclick="setLang('ja')">JA — 日本語</button>
+          <button class="lang-option" onclick="setLang('zh')">ZH — 中文</button>
+        </div>
+      </div>
+      <div class="toggle-wrap" onclick="toggleTheme()" title="Toggle theme">
+        <span class="toggle-icon" id="icon-dark">🌙</span>
+        <div class="theme-toggle" id="themeToggle"></div>
+        <span class="toggle-icon" id="icon-light">☀️</span>
+      </div>
+      <button class="demo-start-btn disabled" id="demoStartBtn" onclick="startDemo()" data-i18n="demo_start_btn">Start Demo →</button>
+    </div>
+  </div>
+
+  <h1 data-i18n="demo_title">Prepare for Your Demo</h1>
+  <p class="subtitle" data-i18n="demo_subtitle">Experience what sets APL COLOR apart with a quick AI-powered analysis</p>
+
+  <!-- CHECKLIST -->
+  <div class="section">
+    <h2 data-i18n="demo_checklist_title">Pre-Photo Checklist</h2>
+    <p style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted); text-align: center;" data-i18n="demo_checklist_desc">Please confirm each item below before taking your photo.</p>
+    <div class="checklist">
+      <div class="progress-indicator" id="progressIndicator">1/8</div>
+
+      <div class="checklist-step active" data-step="1">
+        <button class="check-btn" id="checkBtn1" onclick="checkAndNext(1)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">☀️</div>
+          <div class="checklist-question" data-i18n="demo_check_1">Find a bright spot with natural front-facing light.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="2">
+        <button class="check-btn" id="checkBtn2" onclick="checkAndNext(2)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">👕</div>
+          <div class="checklist-question" data-i18n="demo_check_2">Wear a plain white or beige top.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="3">
+        <button class="check-btn" id="checkBtn3" onclick="checkAndNext(3)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">💄</div>
+          <div class="checklist-question" data-i18n="demo_check_3">Remove or minimize makeup.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="4">
+        <button class="check-btn" id="checkBtn4" onclick="checkAndNext(4)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">💇</div>
+          <div class="checklist-question" data-i18n="demo_check_4">Pin your hair back so your ears are visible.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="5">
+        <button class="check-btn" id="checkBtn5" onclick="checkAndNext(5)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">👓</div>
+          <div class="checklist-question" data-i18n="demo_check_5">Remove all accessories (earrings, glasses, hats, etc.).</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="6">
+        <button class="check-btn" id="checkBtn6" onclick="checkAndNext(6)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">😐</div>
+          <div class="checklist-question" data-i18n="demo_check_6">Keep a neutral expression, looking straight ahead.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="7">
+        <button class="check-btn" id="checkBtn7" onclick="checkAndNext(7)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">📸</div>
+          <div class="checklist-question" data-i18n="demo_check_7">Hold the camera at eye level, about 60cm away.</div>
+        </div>
+      </div>
+
+      <div class="checklist-step" data-step="8">
+        <button class="check-btn" id="checkBtn8" onclick="checkAndNext(8)"></button>
+        <div class="checklist-content">
+          <div class="checklist-image">🖼️</div>
+          <div class="checklist-question" data-i18n="demo_check_8">Use a simple background (e.g. white wall).</div>
+        </div>
+      </div>
+
+      <div class="completion-message" id="completionMessage" data-i18n="demo_complete">✓ All set! Click the "Start Demo" button above.</div>
+    </div>
+  </div>
+
+  <!-- DEMO FEATURES -->
+  <div class="demo-info">
+    <h3 data-i18n="demo_included_title">What's Included in the Demo</h3>
+    <div class="demo-features">
+      <div class="demo-feature" data-i18n="demo_feat_1">Personal Color AI Analysis (Spring/Summer/Autumn/Winter)</div>
+      <div class="demo-feature" data-i18n="demo_feat_2">Face Shape Analysis (oval, round, square, etc.)</div>
+      <div class="demo-feature" data-i18n="demo_feat_3">Body Type Analysis (wave, straight, natural)</div>
+      <div class="demo-feature" data-i18n="demo_feat_4">Sample result page (same format as actual clients receive)</div>
+    </div>
+  </div>
+
+  <!-- DIFFERENCE BOX -->
+  <div class="difference-box">
+    <h3 data-i18n="demo_diff_title">How We Differ from Standard AI Color Diagnosis</h3>
+    <p style="margin-bottom: 24px; color: var(--text-muted); font-size: 15px;" data-i18n="demo_diff_desc">Most online diagnoses end here. APL COLOR starts here.</p>
+    <div class="comparison">
+      <div class="comparison-item">
+        <h4 data-i18n="demo_compare_left">Standard AI Diagnosis</h4>
+        <ul>
+          <li data-i18n="demo_std_1">Seasonal type only</li>
+          <li data-i18n="demo_std_2">Fixed palette</li>
+          <li data-i18n="demo_std_3">One-time result</li>
+          <li data-i18n="demo_std_4">No feedback</li>
+        </ul>
+      </div>
+      <div class="comparison-item highlight">
+        <h4 data-i18n="demo_compare_right">APL COLOR Full Diagnosis</h4>
+        <ul>
+          <li data-i18n="demo_apl_1"><strong>Individual best/worst color selection</strong></li>
+          <li data-i18n="demo_apl_2"><strong>AI hair & eyebrow simulation</strong></li>
+          <li data-i18n="demo_apl_3"><strong>Change tracking over time (Image Chronicle)</strong></li>
+          <li data-i18n="demo_apl_4"><strong>Occasion-based styling (interview, wedding, etc.)</strong></li>
+          <li data-i18n="demo_apl_5"><strong>Colorist final review & comments</strong></li>
+          <li data-i18n="demo_apl_6"><strong>Seasonal trend updates (1–2x per season)</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr style="border: none; border-top: 2px solid var(--border); margin: 40px 0;">
+
+  <!-- PROCESS -->
+  <div class="section">
+    <h2 data-i18n="demo_process_title">How It Works</h2>
+    <div class="process-grid">
+      <div class="process-card">
+        <div class="process-num">STEP 01</div>
+        <div class="process-title" data-i18n="demo_step1_title">Take a Photo</div>
+        <div class="process-desc" data-i18n="demo_step1_desc">Follow the checklist above and take a front-facing photo. Natural light, bare face, and a simple background are key for accurate analysis.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">STEP 02</div>
+        <div class="process-title" data-i18n="demo_step2_title">Upload & AI Analysis</div>
+        <div class="process-desc" data-i18n="demo_step2_desc">Upload your photo and let the AI analyze it. Personal color, face shape, and body type results will be ready in about 30 seconds.</div>
+      </div>
+      <div class="process-card">
+        <div class="process-num">STEP 03</div>
+        <div class="process-title" data-i18n="demo_step3_title">View Demo Results</div>
+        <div class="process-desc" data-i18n="demo_step3_desc">Check your basic analysis results. The full diagnosis adds detailed colorist verification, best/worst colors, and AI hair simulation.</div>
+      </div>
+      <div class="process-card highlight-card">
+        <div class="process-num">STEP 04</div>
+        <div class="process-title" data-i18n="demo_step4_title">Upgrade to Full Diagnosis</div>
+        <div class="process-desc" data-i18n="demo_step4_desc">Enjoyed the demo? <strong>This is just the beginning.</strong><br>Your image chronicle is built through continuous records — personal color is the starting point.<br>Complete your image with lifetime updates and professional consulting.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h3 data-i18n="demo_cta_title">Ready to Go?</h3>
+    <p data-i18n="demo_cta_desc">In just 3 minutes, the first page of your image chronicle will open.</p>
+    <div class="btn-group">
+      <a href="#" class="btn btn-primary" data-i18n="demo_cta_btn1">Start Demo Now →</a>
+      <a href="index.html#pricing" class="btn btn-secondary" data-i18n="demo_cta_btn2">View Full Diagnosis Pricing</a>
+    </div>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script>
+// ─── THEME SYSTEM ───
+const html = document.documentElement;
+const toggle = document.getElementById('themeToggle');
+const iconDark = document.getElementById('icon-dark');
+const iconLight = document.getElementById('icon-light');
+
+function getSystemTheme() {
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+function applyTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  localStorage.setItem('apl-theme', theme);
+  if (theme === 'light') {
+    toggle.classList.add('light-on');
+    iconLight.classList.add('active');
+    iconDark.classList.remove('active');
+  } else {
+    toggle.classList.remove('light-on');
+    iconDark.classList.add('active');
+    iconLight.classList.remove('active');
+  }
+}
+function toggleTheme() {
+  const current = html.getAttribute('data-theme') || getSystemTheme();
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+const savedTheme = localStorage.getItem('apl-theme');
+applyTheme(savedTheme || getSystemTheme());
+
+// ─── LANG DROPDOWN ───
+function toggleLangDropdown() {
+  document.getElementById('langDropdown').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.lang-switcher')) {
+    document.getElementById('langDropdown').classList.remove('open');
+  }
+});
+
+// ─── CHECKLIST LOGIC ───
+let currentStep = 1;
+const totalSteps = 8;
+
+function checkAndNext(step) {
+  const checkBtn = document.getElementById(`checkBtn${step}`);
+  checkBtn.classList.add('checked');
+
+  setTimeout(() => {
+    document.querySelector(`[data-step="${step}"]`).classList.remove('active');
+    currentStep = step + 1;
+
+    if (currentStep <= totalSteps) {
+      document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+      updateProgress();
+    } else {
+      completeChecklist();
+    }
+  }, 300);
+}
+
+function updateProgress() {
+  document.getElementById('progressIndicator').textContent = `${currentStep}/${totalSteps}`;
+}
+
+function completeChecklist() {
+  document.getElementById('completionMessage').classList.add('show');
+  const lang = getCurrentLang();
+  const doneText = {
+    en: `${totalSteps}/${totalSteps} Done!`,
+    ko: `${totalSteps}/${totalSteps} 완료!`,
+    ja: `${totalSteps}/${totalSteps} 完了!`,
+    zh: `${totalSteps}/${totalSteps} 完成!`
+  };
+  document.getElementById('progressIndicator').textContent = doneText[lang] || doneText.en;
+
+  const demoBtn = document.getElementById('demoStartBtn');
+  demoBtn.classList.remove('disabled');
+  demoBtn.classList.add('active');
+}
+
+function startDemo() {
+  window.location.href = '#'; // TODO: set actual demo URL
+}
+</script>
+</body>
+</html>

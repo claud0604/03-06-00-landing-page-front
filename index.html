@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APL — Image Chronicle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f1ef;
+    --surface: #e9e8e5;
+    --surface2: #dddbd7;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1916;
+    --text-muted: #5c5a56;
+    --text-dim: #9b9890;
+    --accent: #a07840;
+    --accent2: #c49656;
+    --coral: #b85f44;
+    --rose: #a45a6e;
+    --sage: #4d7d65;
+    --warm: rgba(160,120,64,0.10);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif KR', serif;
+    --sans: 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
+    --header-bg: rgba(242,241,239,0.90);
+    --shadow: 0 2px 20px rgba(0,0,0,0.08);
+    --grain-opacity: 0.25;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #2a2a2a;
+    --surface2: #222222;
+    --border: #404040;
+    --text: #e0e0e0;
+    --text-muted: #aaaaaa;
+    --text-dim: #777777;
+    --accent: #c4a484;
+    --accent2: #d4b898;
+    --coral: #d4836a;
+    --rose: #c97b8f;
+    --sage: #7a9e8a;
+    --warm: rgba(196,164,132,0.12);
+    --header-bg: rgba(26,26,26,0.88);
+    --shadow: 0 2px 20px rgba(0,0,0,0.25);
+    --grain-opacity: 0.5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #1a1a1a; --surface: #2a2a2a; --surface2: #222222;
+      --border: #404040; --text: #e0e0e0; --text-muted: #aaaaaa;
+      --text-dim: #777777; --accent: #c4a484; --accent2: #d4b898;
+      --coral: #d4836a; --rose: #c97b8f; --sage: #7a9e8a;
+      --warm: rgba(196,164,132,0.12);
+      --header-bg: rgba(26,26,26,0.88);
+      --shadow: 0 2px 20px rgba(0,0,0,0.25);
+      --grain-opacity: 0.5;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── GRAIN OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--grain-opacity);
+  }
+
+  /* ─── CREDENTIAL STRIP ─── */
+  .cred-strip {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 80px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+    margin-top: 64px;
+  }
+  .cred-items { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; white-space: nowrap; }
+  .cred-item { display: flex; align-items: center; gap: 10px; padding: 0 28px; border-right: 1px solid var(--border); }
+  .cred-item:first-child { padding-left: 0; }
+  .cred-item:last-child { border-right: none; }
+  .cred-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .cred-text { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; color: var(--text-muted); text-transform: uppercase; font-weight: 500; }
+  .cred-location { margin-left: auto; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; color: var(--text-dim); display: flex; gap: 16px; }
+  .cred-location span { color: var(--accent); }
+
+  /* ─── THEME TOGGLE ─── */
+  .theme-toggle {
+    width: 38px; height: 22px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s, border-color 0.3s;
+    flex-shrink: 0;
+  }
+  .theme-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s;
+  }
+  [data-theme="dark"] .theme-toggle::after,
+  .theme-toggle.light-on::after { transform: translateX(16px); background: var(--accent); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle-icon { font-size: 13px; line-height: 1; opacity: 0.5; transition: opacity 0.2s; user-select: none; }
+  .toggle-icon.active { opacity: 1; }
+
+  /* ─── LANG SWITCHER ─── */
+  .lang-switcher {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .lang-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    z-index: 200;
+    min-width: 120px;
+    box-shadow: var(--shadow);
+  }
+  .lang-dropdown.open { display: block; }
+  .lang-option {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+  }
+  .lang-option:hover { background: var(--surface2); color: var(--accent); }
+  .lang-option.active { color: var(--accent); }
+
+  /* ─── DARK MODE OVERRIDES ─── */
+  [data-theme="dark"] .btn-primary { color: #fff; }
+  [data-theme="dark"] .hero-bg {
+    background:
+      radial-gradient(ellipse 60% 60% at 70% 50%, rgba(160,120,64,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(169,90,110,0.05) 0%, transparent 60%);
+  }
+  [data-theme="dark"] .card-mock, [data-theme="dark"] .card-mock-back,
+  [data-theme="dark"] .card-mock-back2, [data-theme="dark"] .today-card { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+  [data-theme="dark"] .tl-item::before { box-shadow: 0 0 6px rgba(160,120,64,0.4); }
+  [data-theme="dark"] .bar:nth-child(10) { box-shadow: 0 0 6px rgba(160,120,64,0.3); }
+  [data-theme="dark"] .trust-big, [data-theme="dark"] .meta-num,
+  [data-theme="dark"] .pc-price, [data-theme="dark"] .cm-num { color: var(--accent); }
+  [data-theme="dark"] .panel-badge, [data-theme="dark"] .mock-badge { background: rgba(160,120,64,0.12); }
+  [data-theme="dark"] .diff-card:hover, [data-theme="dark"] .feat-card:hover { background: var(--surface2); }
+  [data-theme="dark"] .pricing-card.featured { background: linear-gradient(135deg, rgba(160,120,64,0.06) 0%, transparent 60%), var(--bg); }
+  [data-theme="dark"] .promo-bar { background: rgba(160,120,64,0.07); border-color: rgba(160,120,64,0.18); }
+  [data-theme="dark"] .ev-chip { background: rgba(160,120,64,0.07); border-color: rgba(160,120,64,0.15); }
+
+  /* ─── HEADER ─── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 0 48px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--header-bg);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .logo { font-family: var(--mono); font-size: 16px; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; }
+  .logo span { color: var(--text-muted); }
+  nav { display: flex; gap: 32px; }
+  nav a { font-size: 14px; letter-spacing: 0.08em; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+  nav a:hover { color: var(--text); }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+
+  .btn { font-family: var(--sans); font-size: 12px; letter-spacing: 0.06em; padding: 8px 20px; border-radius: 3px; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: #0e0e10; font-weight: 500; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-outline { background: transparent; border: 1px solid rgba(200,169,126,0.4); color: var(--accent); }
+  .btn-outline:hover { background: var(--warm); }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 100vh;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0; padding: 0;
+    position: relative; overflow: hidden;
+    max-width: 1400px; margin: 0 auto;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 60% at 70% 50%, rgba(200,169,126,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(201,123,143,0.04) 0%, transparent 60%);
+  }
+  .hero-left { padding: 120px 24px 80px 80px; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 2; }
+  .hero-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.25em; color: var(--accent); text-transform: uppercase; margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+  .hero-tag::before { content: ''; width: 32px; height: 1px; background: var(--accent); }
+  .hero-h1 { font-family: var(--serif); font-size: clamp(32px, 3.5vw, 54px); font-weight: 300; line-height: 1.35; letter-spacing: -0.01em; margin-bottom: 28px; color: var(--text); }
+  .hero-h1 em { font-style: normal; color: var(--accent); }
+  .hero-sub { font-size: 15px; color: var(--text-muted); max-width: 440px; line-height: 1.8; margin-bottom: 48px; }
+  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-meta { margin-top: 64px; display: flex; gap: 40px; }
+  .meta-num { font-family: var(--mono); font-size: 22px; color: var(--accent); letter-spacing: -0.02em; }
+  .meta-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* Hero Right — UI Mockup */
+  .hero-right { display: flex; align-items: center; justify-content: center; padding: 100px 80px 80px 24px; position: relative; z-index: 2; }
+  .mockup-stack { position: relative; width: 100%; max-width: 420px; }
+  .card-mock { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; position: relative; }
+  .card-mock-back { position: absolute; top: -16px; right: -16px; left: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; z-index: -1; opacity: 0.6; }
+  .card-mock-back2 { position: absolute; top: -28px; right: -28px; left: 28px; background: rgba(30,30,36,0.5); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 24px; z-index: -2; opacity: 0.4; }
+  .mock-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .mock-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; padding: 4px 10px; border-radius: 2px; background: rgba(200,169,126,0.15); color: var(--accent); border: 1px solid rgba(200,169,126,0.25); }
+  .mock-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+
+  /* Timeline inside card */
+  .timeline-mini { position: relative; padding-left: 20px; }
+  .timeline-mini::before { content: ''; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(to bottom, var(--accent), transparent); }
+  .tl-item { position: relative; margin-bottom: 16px; opacity: 0.9; }
+  .tl-item::before { content: ''; position: absolute; left: -17px; top: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(200,169,126,0.5); }
+  .tl-item:nth-child(2)::before { background: var(--rose); box-shadow: 0 0 8px rgba(201,123,143,0.5); opacity: 0.7; }
+  .tl-item:nth-child(3)::before { background: var(--text-dim); opacity: 0.5; }
+  .tl-year { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 2px; }
+  .tl-title { font-size: 14px; color: var(--text); font-weight: 400; }
+  .tl-sub { font-size: 11px; color: var(--text-dim); }
+
+  /* Sparkline graph */
+  .mock-graph { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .graph-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; margin-bottom: 10px; }
+  .sparkline-bars { display: flex; align-items: flex-end; gap: 4px; height: 40px; }
+  .bar { flex: 1; border-radius: 2px 2px 0 0; transition: opacity 0.2s; }
+  .bar:nth-child(1) { height: 30%; background: var(--text-dim); opacity: 0.3; }
+  .bar:nth-child(2) { height: 45%; background: var(--text-dim); opacity: 0.3; }
+  .bar:nth-child(3) { height: 55%; background: var(--accent); opacity: 0.4; }
+  .bar:nth-child(4) { height: 48%; background: var(--accent); opacity: 0.5; }
+  .bar:nth-child(5) { height: 65%; background: var(--accent); opacity: 0.6; }
+  .bar:nth-child(6) { height: 72%; background: var(--accent); opacity: 0.75; }
+  .bar:nth-child(7) { height: 80%; background: var(--accent); opacity: 0.85; }
+  .bar:nth-child(8) { height: 88%; background: var(--accent); }
+  .bar:nth-child(9) { height: 76%; background: var(--accent); opacity: 0.9; }
+  .bar:nth-child(10) { height: 90%; background: var(--accent2); box-shadow: 0 0 8px rgba(200,169,126,0.4); }
+
+  /* Today card overlay */
+  .today-card { position: absolute; bottom: -24px; left: -24px; background: var(--surface2); border: 1px solid rgba(200,169,126,0.2); border-radius: 8px; padding: 14px 18px; width: 220px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+  .today-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; color: var(--coral); margin-bottom: 8px; }
+  .today-items { display: flex; flex-direction: column; gap: 6px; }
+  .today-item { display: flex; align-items: center; gap: 8px; }
+  .today-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .today-text { font-size: 11px; color: var(--text-muted); }
+  .today-text strong { color: var(--text); font-weight: 500; }
+
+  /* ─── SECTION COMMON ─── */
+  section { padding: 120px 80px; }
+  .section-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; }
+  .section-h2 { font-family: var(--serif); font-size: clamp(26px, 2.5vw, 40px); font-weight: 300; line-height: 1.35; margin-bottom: 20px; }
+  .section-sub { font-size: 14px; color: var(--text-muted); max-width: 520px; line-height: 1.8; }
+  .divider { width: 100%; height: 1px; background: var(--border); }
+
+  /* ─── DIFF SECTION ─── */
+  #diff { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .diff-header { max-width: 1200px; margin: 0 auto 64px; text-align: center; }
+  .diff-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .diff-card { background: var(--surface); padding: 48px 40px; position: relative; transition: background 0.3s; }
+  .diff-card:hover { background: var(--surface2); }
+  .diff-num { font-family: var(--mono); font-size: 20px; letter-spacing: 0.2em; color: var(--text-dim); margin-bottom: 12px; }
+  .diff-title { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 12px; color: var(--accent); }
+  .diff-body { font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+
+  /* ─── TIMELINE SECTION ─── */
+  #timeline { max-width: 1200px; margin: 0 auto; }
+  #timeline-section { padding: 120px 80px; position: relative; }
+  .timeline-header { max-width: 600px; margin-bottom: 80px; }
+  .tl-full { display: grid; grid-template-columns: 200px 1fr; gap: 0; max-width: 960px; margin: 0 auto; position: relative; }
+  .tl-years { position: relative; padding-right: 48px; }
+  .tl-spine { position: absolute; right: 0; top: 16px; bottom: 16px; width: 1px; background: linear-gradient(to bottom, var(--accent), rgba(200,169,126,0.1)); }
+  .tl-year-item { padding: 0 48px 56px 0; position: relative; cursor: pointer; }
+  .tl-year-item::after { content: ''; position: absolute; right: -5px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--text-dim); transition: all 0.3s; }
+  .tl-year-item.active::after { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(200,169,126,0.4); }
+  .tl-year-label { font-family: var(--mono); font-size: 22px; letter-spacing: -0.02em; color: var(--text-dim); transition: color 0.3s; }
+  .tl-year-item.active .tl-year-label { color: var(--accent); }
+  .tl-year-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; opacity: 0; transition: opacity 0.3s; }
+  .tl-year-item.active .tl-year-sub { opacity: 1; color: var(--text-muted); }
+  .tl-content-area { padding-left: 64px; }
+  .tl-panel { display: none; animation: fadeSlide 0.4s ease; }
+  .tl-panel.active { display: block; }
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel-inner { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .panel-top { padding: 32px 36px; border-bottom: 1px solid var(--border); }
+  .panel-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; padding: 4px 12px; border-radius: 2px; background: rgba(200,169,126,0.1); color: var(--accent); display: inline-block; margin-bottom: 16px; }
+  .panel-h3 { font-family: var(--serif); font-size: 20px; font-weight: 300; margin-bottom: 8px; }
+  .panel-desc { font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+  .panel-mid { padding: 24px 36px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .change-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 6px; }
+  .change-bar-wrap { background: var(--surface2); height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .change-bar { height: 100%; background: linear-gradient(to right, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.8s ease; }
+  .change-val { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+  .panel-bottom { padding: 24px 36px; display: flex; gap: 12px; align-items: center; }
+  .rec-chip { font-size: 12px; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); }
+  .rec-chip.paid { background: rgba(200,169,126,0.1); border-color: rgba(200,169,126,0.3); color: var(--accent); }
+  .rebadge { margin-left: auto; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; padding: 6px 12px; background: rgba(212,131,106,0.1); border: 1px solid rgba(212,131,106,0.3); color: var(--coral); border-radius: 2px; }
+
+  /* ─── AI + HUMAN ─── */
+  #aihuman { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .aihuman-inner { max-width: 1200px; margin: 0 auto; }
+  .aihuman-header { text-align: center; margin-bottom: 72px; }
+  .aihuman-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 40px; }
+  .aihuman-col { background: var(--surface); padding: 48px; }
+  .col-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; margin-bottom: 24px; }
+  .col-tag.ai { color: var(--sage); }
+  .col-tag.human { color: var(--rose); }
+  .col-h3 { font-family: var(--serif); font-size: 22px; font-weight: 300; margin-bottom: 24px; }
+  .col-items { display: flex; flex-direction: column; gap: 14px; }
+  .col-item { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--text-muted); }
+  .col-item::before { content: '—'; font-family: var(--mono); color: var(--text-dim); flex-shrink: 0; margin-top: 2px; }
+  .evidence-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 20px 32px; display: flex; align-items: center; gap: 24px; max-width: 1200px; margin: 0 auto; }
+  .ev-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: var(--text-dim); white-space: nowrap; }
+  .ev-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ev-chip { font-size: 12px; padding: 6px 14px; border-radius: 3px; background: rgba(200,169,126,0.08); border: 1px solid rgba(200,169,126,0.15); color: var(--text-muted); }
+  .ev-chip strong { color: var(--accent); font-weight: 500; }
+
+  /* ─── FEATURES ─── */
+  #features-section { padding: 120px 80px; }
+  .feat-inner { max-width: 1200px; margin: 0 auto; }
+  .feat-header { text-align: center; margin-bottom: 64px; }
+  .feat-tabs { display: flex; justify-content: center; gap: 2px; margin-bottom: 48px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
+  .feat-tab { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; padding: 10px 24px; border-radius: 4px; cursor: pointer; color: var(--text-dim); transition: all 0.2s; border: none; background: none; }
+  .feat-tab.active { background: var(--surface2); color: var(--accent); border: 1px solid rgba(200,169,126,0.2); }
+  .feat-content { display: none; }
+  .feat-content.active { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .feat-card { background: var(--surface); padding: 40px; transition: background 0.2s; }
+  .feat-card:hover { background: var(--surface2); }
+  .feat-card-title { font-family: var(--serif); font-size: 17px; font-weight: 300; margin-bottom: 10px; color: var(--accent); }
+  .feat-card-body { font-size: 13px; color: var(--text-muted); line-height: 1.75; }
+
+  /* ─── FAQ ─── */
+  #faq { padding: 120px 80px; }
+  .faq-inner { max-width: 800px; margin: 0 auto; }
+  .faq-header { margin-bottom: 64px; }
+  .faq-item { border-bottom: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+  .faq-item:first-of-type { border-top: 1px solid var(--border); }
+  .faq-q { padding: 24px 0; display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: var(--text); user-select: none; }
+  .faq-toggle { width: 20px; height: 20px; flex-shrink: 0; position: relative; }
+  .faq-toggle::before, .faq-toggle::after { content: ''; position: absolute; background: var(--text-muted); transition: transform 0.3s, opacity 0.3s; }
+  .faq-toggle::before { width: 12px; height: 1px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  .faq-toggle::after { width: 1px; height: 12px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  .faq-item.open .faq-toggle::after { transform: translate(-50%, -50%) rotate(90deg); opacity: 0; }
+  .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s; font-size: 13px; color: var(--text-muted); line-height: 1.8; }
+  .faq-item.open .faq-a { max-height: 200px; padding-bottom: 24px; }
+
+  /* ─── FOOTER CTA ─── */
+  #footer-cta { background: var(--surface); border-top: 1px solid var(--border); padding: 120px 80px; text-align: center; }
+  .footer-cta-h2 { font-family: var(--serif); font-size: clamp(28px, 3vw, 48px); font-weight: 300; margin-bottom: 20px; }
+  .footer-cta-h2 em { font-style: normal; color: var(--accent); }
+  .footer-cta-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 48px; }
+  .footer-cta-actions { display: flex; justify-content: center; gap: 16px; }
+
+  footer { padding: 32px 80px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .footer-copy { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 11px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text-muted); }
+
+  /* ─── ANIMATIONS ─── */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    header { padding: 0 24px; }
+    nav { display: none; }
+    #hero { grid-template-columns: 1fr; }
+    .hero-left { padding: 100px 40px 60px; }
+    .hero-right { padding: 40px 40px 80px; }
+    section { padding: 80px 40px; }
+    .diff-grid, .aihuman-grid { grid-template-columns: 1fr; }
+    .feat-content.active { grid-template-columns: 1fr; }
+    .cred-strip { padding: 10px 24px; }
+    footer { padding: 24px 40px; flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">APL COLOR<span> ·</span> <span data-i18n="logo_sub">Image Chronicle</span></div>
+  <nav>
+    <a href="#diff" data-i18n="nav_about">About</a>
+    <a href="#features-section" data-i18n="nav_features">Features</a>
+    <a href="#cases-section" data-i18n="nav_cases">Cases</a>
+    <a href="#faq" data-i18n="nav_faq">FAQ</a>
+  </nav>
+  <div class="header-actions">
+    <div class="lang-switcher">
+      <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()">EN</button>
+      <div class="lang-dropdown" id="langDropdown">
+        <button class="lang-option active" onclick="setLang('en')">EN — English</button>
+        <button class="lang-option" onclick="setLang('ko')">KO — 한국어</button>
+        <button class="lang-option" onclick="setLang('ja')">JA — 日本語</button>
+        <button class="lang-option" onclick="setLang('zh')">ZH — 中文</button>
+      </div>
+    </div>
+    <div class="toggle-wrap" onclick="toggleTheme()" title="Toggle theme">
+      <span class="toggle-icon" id="icon-dark">🌙</span>
+      <div class="theme-toggle" id="themeToggle"></div>
+      <span class="toggle-icon" id="icon-light">☀️</span>
+    </div>
+    <a href="#" class="btn btn-ghost" data-i18n="header_results">My Results</a>
+    <a href="demo.html" class="btn btn-primary" data-i18n="header_demo">Try Demo</a>
+  </div>
+</header>
+
+<!-- CREDENTIAL STRIP -->
+<div class="cred-strip">
+  <div class="cred-items">
+    <div class="cred-item">
+      <div class="cred-dot"></div>
+      <div class="cred-text" data-i18n="cred_1">Certified Color Expertise</div>
+    </div>
+    <div class="cred-item">
+      <div class="cred-dot"></div>
+      <div class="cred-text" data-i18n="cred_2">Lab Data-Based Analysis</div>
+    </div>
+    <div class="cred-item">
+      <div class="cred-dot"></div>
+      <div class="cred-text" data-i18n="cred_3">AI + Human Verified</div>
+    </div>
+    <div class="cred-item">
+      <div class="cred-dot"></div>
+      <div class="cred-text" data-i18n="cred_4">Professional Colorist Team</div>
+    </div>
+  </div>
+  <div class="cred-location">
+    <span>Seoul</span> · Busan · <span>Osaka</span> · Shanghai
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-left">
+    <div class="hero-tag">APL COLOR — Personal Color & Image Making</div>
+    <h1 class="hero-h1" data-i18n="hero_title">Diagnosis is the start,<br>your image is<br>completed by <em>'records'</em></h1>
+    <p class="hero-sub" data-i18n="hero_sub">Time passes, trends change,<br>but your standards evolve with them.</p>
+    <div class="hero-cta">
+      <a href="#" class="btn btn-primary" style="padding:14px 32px; font-size:14px;" data-i18n="hero_cta_1">View My Analysis</a>
+      <a href="demo.html" class="btn btn-ghost" style="padding:14px 32px; font-size:14px;" data-i18n="hero_cta_2">3-min Demo →</a>
+    </div>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <div class="meta-num">12,400+</div>
+        <div class="meta-label" data-i18n="hero_meta_1">Total Analyses</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-num">4.97</div>
+        <div class="meta-label" data-i18n="hero_meta_2">Avg Satisfaction</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI MOCKUP -->
+  <div class="hero-right">
+    <div class="mockup-stack">
+      <div class="card-mock-back2"></div>
+      <div class="card-mock-back">
+        <div style="height:8px;background:var(--border);border-radius:4px;margin-bottom:8px;width:60%"></div>
+        <div style="height:8px;background:var(--border);border-radius:4px;width:40%"></div>
+      </div>
+      <div class="card-mock">
+        <div class="mock-header">
+          <div class="mock-badge" data-i18n="mock_badge">Colorist Verified</div>
+          <div class="mock-date">2026.02.19</div>
+        </div>
+        <div class="timeline-mini">
+          <div class="tl-item">
+            <div class="tl-year" data-i18n="mock_tl_1_year">2026 · Latest</div>
+            <div class="tl-title" data-i18n="mock_tl_1_title">Spring Light + Wave Body + Oval Face</div>
+            <div class="tl-sub" data-i18n="mock_tl_1_sub">Skin brightness↑ · Coral optimal</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year">2023</div>
+            <div class="tl-title" data-i18n="mock_tl_2_title">Spring Soft + Wave Body + Oval Face</div>
+            <div class="tl-sub" data-i18n="mock_tl_2_sub">Mood shift detected · Re-test recommended</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year" data-i18n="mock_tl_3_year">2021 · First</div>
+            <div class="tl-title" data-i18n="mock_tl_3_title">Spring Soft + Wave Body + Oval Face</div>
+            <div class="tl-sub" data-i18n="mock_tl_3_sub">Initial baseline recorded</div>
+          </div>
+        </div>
+        <div class="mock-graph">
+          <div class="graph-label">SKIN BRIGHTNESS · TREND</div>
+          <div class="sparkline-bars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="today-card">
+        <div class="today-tag">TODAY'S UPDATE</div>
+        <div class="today-items">
+          <div class="today-item">
+            <div class="today-dot" style="background:var(--coral)"></div>
+            <div class="today-text" data-i18n="today_1"><strong>Coral lip</strong> new arrivals added</div>
+          </div>
+          <div class="today-item">
+            <div class="today-dot" style="background:var(--sage)"></div>
+            <div class="today-text" data-i18n="today_2"><strong>Hair color</strong> trend updated</div>
+          </div>
+          <div class="today-item">
+            <div class="today-dot" style="background:var(--accent)"></div>
+            <div class="today-text" data-i18n="today_3">Interview <strong>style package</strong> ready</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFF SECTION -->
+<section id="diff">
+  <div class="diff-header reveal">
+    <div class="section-tag" style="font-size:15px;" data-i18n="diff_tag">What makes us different?</div>
+    <h2 class="section-h2" data-i18n="diff_title">Understand the difference in 3 seconds</h2>
+  </div>
+  <div class="diff-grid">
+    <div class="diff-card reveal">
+      <div class="diff-num">01</div>
+      <div class="diff-title" data-i18n="diff_1_title">Chronicle</div>
+      <div class="diff-body" data-i18n="diff_1_body">One diagnosis is never enough. Your personal image chronicle grows more precise over time — tracking skin changes, mood shifts, and style evolution.</div>
+    </div>
+    <div class="diff-card reveal">
+      <div class="diff-num">02</div>
+      <div class="diff-title" data-i18n="diff_2_title">Auto-Update</div>
+      <div class="diff-body" data-i18n="diff_2_body">Trends and new products are automatically reflected in your account. Season after season, personalized suggestions come to you first.</div>
+    </div>
+    <div class="diff-card reveal">
+      <div class="diff-num">03</div>
+      <div class="diff-title" data-i18n="diff_3_title">Occasion Packages</div>
+      <div class="diff-body" data-i18n="diff_3_body">From job interviews to weddings — we design looks and makeup tailored to your image for every important moment.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE SECTION -->
+<section id="timeline-section">
+  <div id="timeline">
+    <div class="timeline-header reveal">
+      <div class="section-tag" style="font-size:13px;" data-i18n="tl_tag">Image Chronicle · Demo</div>
+      <h2 class="section-h2" data-i18n="tl_title">Records that sharpen<br>over time</h2>
+      <p class="section-sub" data-i18n="tl_sub">Select a year to explore your diagnosis history and change trends.</p>
+    </div>
+    <div class="tl-full">
+      <div class="tl-years">
+        <div class="tl-spine"></div>
+        <div class="tl-year-item active" onclick="switchYear('2026')">
+          <div class="tl-year-label">2026</div>
+          <div class="tl-year-sub" data-i18n="tl_2026_sub">Latest analysis complete</div>
+        </div>
+        <div class="tl-year-item" onclick="switchYear('2023')">
+          <div class="tl-year-label">2023</div>
+          <div class="tl-year-sub" data-i18n="tl_2023_sub">Mood change detected</div>
+        </div>
+        <div class="tl-year-item" onclick="switchYear('2021')">
+          <div class="tl-year-label">2021</div>
+          <div class="tl-year-sub" data-i18n="tl_2021_sub">First diagnosis</div>
+        </div>
+      </div>
+      <div class="tl-content-area">
+        <div class="tl-panel active" id="panel-2026">
+          <div class="panel-inner">
+            <div class="panel-top">
+              <div class="panel-badge" data-i18n="p2026_badge">2026 · Latest Analysis</div>
+              <h3 class="panel-h3" data-i18n="p2026_title">Spring Light — Coral & Peach Optimal</h3>
+              <p class="panel-desc" data-i18n="p2026_desc">Recent increase in skin brightness with redness shift, resulting in foundation shade change. Neckline recommendation updated due to trapezius development since 2023.</p>
+            </div>
+            <div class="panel-mid">
+              <div class="change-item">
+                <div class="change-label">SKIN BRIGHTNESS</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:82%"></div></div>
+                <div class="change-val">82 / 100 ↑</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">CONTRAST LEVEL</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:44%"></div></div>
+                <div class="change-val">44 / 100 ↓</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">WARM TONE RESPONSE</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:90%"></div></div>
+                <div class="change-val">90 / 100</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">PREFERRED MOOD</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:68%"></div></div>
+                <div class="change-val">Soft / Translucent</div>
+              </div>
+            </div>
+            <div class="panel-bottom">
+              <div class="rec-chip" data-i18n="p2026_free">✓ Free — Coral lip picks</div>
+              <div class="rec-chip paid" data-i18n="p2026_paid">★ Paid — Interview package</div>
+              <div class="rebadge" data-i18n="p2026_status">Good · No re-test needed</div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-panel" id="panel-2023">
+          <div class="panel-inner">
+            <div class="panel-top">
+              <div class="panel-badge" data-i18n="p2023_badge">2023 · Mood Change Detected</div>
+              <h3 class="panel-h3" data-i18n="p2023_title">Warm Deep Autumn — High Contrast, Earth Tones</h3>
+              <p class="panel-desc" data-i18n="p2023_desc">Compared to the initial 2021 diagnosis, skin contrast has increased with stronger response to earthy palettes. Data shift detected after hair color and beauty treatments.</p>
+            </div>
+            <div class="panel-mid">
+              <div class="change-item">
+                <div class="change-label">SKIN BRIGHTNESS</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:61%"></div></div>
+                <div class="change-val">61 / 100</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">CONTRAST LEVEL</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:74%"></div></div>
+                <div class="change-val">74 / 100 ↑</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">WARM TONE RESPONSE</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:78%"></div></div>
+                <div class="change-val">78 / 100</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">PREFERRED MOOD</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:55%"></div></div>
+                <div class="change-val">Earth / Deep</div>
+              </div>
+            </div>
+            <div class="panel-bottom">
+              <div class="rec-chip" data-i18n="p2023_free">✓ Free — Autumn neutrals</div>
+              <div class="rec-chip paid" data-i18n="p2023_paid">★ Paid — Wedding package</div>
+              <div class="rebadge" style="background:rgba(212,131,106,0.15); border-color:rgba(212,131,106,0.4);" data-i18n="p2023_status">Re-test recommended</div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-panel" id="panel-2021">
+          <div class="panel-inner">
+            <div class="panel-top">
+              <div class="panel-badge" data-i18n="p2021_badge">2021 · First Diagnosis</div>
+              <h3 class="panel-h3" data-i18n="p2021_title">Soft Autumn — Initial Baseline Established</h3>
+              <p class="panel-desc" data-i18n="p2021_desc">First scientific instrument-based measurement data. This record serves as the baseline for all future change analysis. Colorimeter LAB values and initial mood profile saved.</p>
+            </div>
+            <div class="panel-mid">
+              <div class="change-item">
+                <div class="change-label">SKIN BRIGHTNESS</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:65%"></div></div>
+                <div class="change-val">65 / 100 — Baseline</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">CONTRAST LEVEL</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:52%"></div></div>
+                <div class="change-val">52 / 100 — Baseline</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">WARM TONE RESPONSE</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:70%"></div></div>
+                <div class="change-val">70 / 100</div>
+              </div>
+              <div class="change-item">
+                <div class="change-label">PREFERRED MOOD</div>
+                <div class="change-bar-wrap"><div class="change-bar" style="width:50%"></div></div>
+                <div class="change-val">Natural / Autumn</div>
+              </div>
+            </div>
+            <div class="panel-bottom">
+              <div class="rec-chip" data-i18n="p2021_free">✓ Free — Basic color palette</div>
+              <div class="rec-chip" style="opacity:0.4" data-i18n="p2021_note">First diagnosis — No packages</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI + HUMAN -->
+<section id="aihuman">
+  <div class="aihuman-inner">
+    <div class="aihuman-header reveal">
+      <div class="section-tag" data-i18n="ai_tag">Trust Architecture</div>
+      <h2 class="section-h2" data-i18n="ai_title">AI analyzes,<br>humans verify</h2>
+    </div>
+    <div class="aihuman-grid reveal">
+      <div class="aihuman-col">
+        <div class="col-tag ai" data-i18n="ai_col_tag">AI · PATTERN ANALYSIS</div>
+        <h3 class="col-h3" data-i18n="ai_col_title">What AI Analyzes</h3>
+        <div class="col-items">
+          <div class="col-item" data-i18n="ai_item_1">Auto-classify skin Lab data</div>
+          <div class="col-item" data-i18n="ai_item_2">Compare similar customer patterns</div>
+          <div class="col-item" data-i18n="ai_item_3">Auto-match trends & new items</div>
+          <div class="col-item" data-i18n="ai_item_4">Detect changes from past records</div>
+          <div class="col-item" data-i18n="ai_item_5">Generate data-driven recommendations</div>
+        </div>
+      </div>
+      <div class="aihuman-col">
+        <div class="col-tag human" data-i18n="human_col_tag">CONSULTANT · FINAL JUDGMENT</div>
+        <h3 class="col-h3" data-i18n="human_col_title">What Humans Verify</h3>
+        <div class="col-items">
+          <div class="col-item" data-i18n="human_item_1">Final judgment on edge cases</div>
+          <div class="col-item" data-i18n="human_item_2">Factor in career, goals & lifestyle</div>
+          <div class="col-item" data-i18n="human_item_3">Finalize occasion packages</div>
+          <div class="col-item" data-i18n="human_item_4">Adjust for special skin conditions</div>
+          <div class="col-item" data-i18n="human_item_5">Cross-review AI recommendations</div>
+        </div>
+      </div>
+    </div>
+    <div class="evidence-bar reveal">
+      <div class="ev-label" data-i18n="ev_label">EVIDENCE CARD</div>
+      <div class="ev-chips">
+        <div class="ev-chip" data-i18n="ev_1">Similar customers <strong>1,842</strong></div>
+        <div class="ev-chip" data-i18n="ev_2">Satisfaction <strong>4.7</strong></div>
+        <div class="ev-chip" data-i18n="ev_3">Coral vs Rose response <strong>↑23%</strong></div>
+        <div class="ev-chip" data-i18n="ev_4">Re-test accuracy <strong>91%</strong></div>
+        <div class="ev-chip" data-i18n="ev_5">Consultant approved <strong>✓</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features-section">
+  <div class="feat-inner">
+    <div class="feat-header reveal">
+      <div class="section-tag" data-i18n="feat_tag">Core Features</div>
+      <h2 class="section-h2" data-i18n="feat_title">One platform,<br>three strengths</h2>
+    </div>
+    <div class="feat-tabs" role="tablist">
+      <button class="feat-tab active" onclick="switchTab('chronicle')" data-i18n="feat_tab_1">Chronicle</button>
+      <button class="feat-tab" onclick="switchTab('trend')" data-i18n="feat_tab_2">Trends</button>
+      <button class="feat-tab" onclick="switchTab('life')" data-i18n="feat_tab_3">Life Events</button>
+    </div>
+    <div class="feat-content active" id="tab-chronicle">
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fc_1_title">Change Tracking & Visualization</div>
+        <div class="feat-card-body" data-i18n="fc_1_body">Track skin tone and color responses over time. View year-by-year change trends and reference the most stable baseline period.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fc_2_title">Re-diagnosis Timing</div>
+        <div class="feat-card-body" data-i18n="fc_2_body">Analyzes change patterns to notify you when a check-up is needed. Personalized alerts based on seasonal shifts and lifestyle changes.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fc_3_title">Past Diagnosis Integration</div>
+        <div class="feat-card-body" data-i18n="fc_3_body">Upload your past diagnosis PDF to link it into your image chronicle. Manage previous records alongside your current data.</div>
+      </div>
+    </div>
+    <div class="feat-content" id="tab-trend">
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="ft_1_title">Image-Based New Arrivals</div>
+        <div class="feat-card-body" data-i18n="ft_1_body">We suggest seasonal items that match your color, body type, and face shape. Filter by brand and category for precision.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="ft_2_title">Trending Hair & Style</div>
+        <div class="feat-card-body" data-i18n="ft_2_body">Find the latest hair trends that suit your face shape and image mood. Use as simulation references for your stylist.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="ft_3_title">Similar Type Data Analysis</div>
+        <div class="feat-card-body" data-i18n="ft_3_body">Recommendations based on real choices by customers with similar color, body, and face profiles. View the evidence behind every suggestion.</div>
+      </div>
+    </div>
+    <div class="feat-content" id="tab-life">
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fl_1_title">Interview & Career Package</div>
+        <div class="feat-card-body" data-i18n="fl_1_body">Design color, silhouette, and image mood tailored to your role and company culture. Make first impressions strategic.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fl_2_title">Wedding Image Package</div>
+        <div class="feat-card-body" data-i18n="fl_2_body">Whether you're the star or a guest, we design your look based on your personal standards of harmony and presence.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-title" data-i18n="fl_3_title">Branding & Formal Events</div>
+        <div class="feat-card-body" data-i18n="fl_3_body">Profile shoots, presentations, official events — we design for trust and presence in every social setting.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="faq-inner">
+    <div class="faq-header reveal">
+      <div class="section-tag">FAQ</div>
+      <h2 class="section-h2" data-i18n="faq_title">Frequently Asked Questions</h2>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span data-i18n="faq_q1">Can I import my old diagnosis PDF into the chronicle?</span> <div class="faq-toggle"></div></div>
+      <div class="faq-a" data-i18n="faq_a1">Yes, upload your past PDF and our AI will parse the data into your chronicle. If automated parsing isn't perfect, a consultant will manually enter it. Accuracy is highest with data measured using APL instruments (LS170/175).</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span data-i18n="faq_q2">How can I see the reasoning behind recommendations?</span> <div class="faq-toggle"></div></div>
+      <div class="faq-a" data-i18n="faq_a2">Every recommendation comes with an evidence card showing similar customer counts, satisfaction data, color response comparisons, and consultant approval status. You can always see "why this item" backed by data.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span data-i18n="faq_q3">When do I need a re-test?</span> <div class="faq-toggle"></div></div>
+      <div class="faq-a" data-i18n="faq_a3">We generally recommend every 2–3 years, but our AI detects changes from hair treatments, skin shifts, or seasonal accumulation and sends earlier re-test alerts when needed.</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q"><span data-i18n="faq_q4">Is my personal data and photos secure?</span> <div class="faq-toggle"></div></div>
+      <div class="faq-a" data-i18n="faq_a4">All skin measurement data and images are encrypted and never shared with third parties. Professional staff manage data security processes. All data is permanently deleted upon account deletion.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER CTA -->
+<section id="footer-cta">
+  <div class="section-tag reveal" data-i18n="cta_tag">Get Started</div>
+  <h2 class="footer-cta-h2 reveal" data-i18n="cta_title">Your <em>Image Chronicle</em>,<br>opens its first page today</h2>
+  <p class="footer-cta-sub reveal" data-i18n="cta_sub">The diagnosis is done. Now it's time to start recording.</p>
+  <div class="footer-cta-actions reveal">
+    <a href="#" class="btn btn-primary" style="padding:16px 40px;font-size:15px;" data-i18n="cta_btn_1">View My Results</a>
+    <a href="#" class="btn btn-ghost" style="padding:16px 40px;font-size:15px;" data-i18n="cta_btn_2">Get Free Updates</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-copy">© 2026 APL Inc. — APL COLOR Image Chronicle</div>
+  <div class="footer-links">
+    <a href="#" data-i18n="footer_privacy">Privacy Policy</a>
+    <a href="#" data-i18n="footer_terms">Terms of Service</a>
+    <a href="#" data-i18n="footer_b2b">B2B Inquiry</a>
+    <a href="#" data-i18n="footer_support">Support</a>
+  </div>
+</footer>
+
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
