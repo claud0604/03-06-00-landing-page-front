@@ -3,8 +3,8 @@ const DEMO_API_BASE = 'http://localhost:3060'; // TODO: update to production URL
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // ─── STATE ───
-let faceImageData = null; // { base64, mimeType }
-let bodyImageData = null; // { base64, mimeType }
+let faceImageLoaded = false;
+let bodyImageLoaded = false;
 
 // ─── THEME SYSTEM ───
 const html = document.documentElement;
@@ -45,6 +45,20 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ─── MEDIAPIPE STATUS ───
+window.addEventListener('faceanalyzer-state', (e) => {
+  const el = document.getElementById('mpStatus');
+  if (!el) return;
+  if (e.detail === 'ready') {
+    el.textContent = '✓ On-device AI ready';
+    el.className = 'mp-status ready';
+    setTimeout(() => { el.style.opacity = '0'; }, 2000);
+  } else if (e.detail === 'error') {
+    el.textContent = '⚠ AI model failed to load';
+    el.className = 'mp-status error';
+  }
+});
+
 // ─── FILE HANDLING ───
 function handleFileSelect(input, type) {
   const file = input.files[0];
@@ -59,15 +73,13 @@ function handleFileSelect(input, type) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const dataUrl = e.target.result;
-    const base64 = dataUrl.split(',')[1];
-    const mimeType = file.type || 'image/jpeg';
 
     if (type === 'face') {
-      faceImageData = { base64, mimeType };
+      faceImageLoaded = true;
       document.getElementById('facePreview').src = dataUrl;
       document.getElementById('faceUploadZone').classList.add('has-image');
     } else {
-      bodyImageData = { base64, mimeType };
+      bodyImageLoaded = true;
       document.getElementById('bodyPreview').src = dataUrl;
       document.getElementById('bodyUploadZone').classList.add('has-image');
     }
@@ -81,12 +93,12 @@ function removeImage(event, type) {
   event.stopPropagation();
 
   if (type === 'face') {
-    faceImageData = null;
+    faceImageLoaded = false;
     document.getElementById('faceInput').value = '';
     document.getElementById('facePreview').src = '';
     document.getElementById('faceUploadZone').classList.remove('has-image');
   } else {
-    bodyImageData = null;
+    bodyImageLoaded = false;
     document.getElementById('bodyInput').value = '';
     document.getElementById('bodyPreview').src = '';
     document.getElementById('bodyUploadZone').classList.remove('has-image');
@@ -97,7 +109,7 @@ function removeImage(event, type) {
 
 function updateSubmitButton() {
   const btn = document.getElementById('submitBtn');
-  btn.disabled = !faceImageData;
+  btn.disabled = !faceImageLoaded;
 }
 
 // ─── STEP NAVIGATION ───
@@ -151,31 +163,63 @@ function delay(ms) {
 
 // ─── START DIAGNOSIS ───
 async function startDiagnosis() {
-  if (!faceImageData) return;
+  if (!faceImageLoaded) return;
 
   goToStep(2);
 
   const analysisAnimation = animateAnalysis();
 
   try {
-    const age = document.getElementById('ageInput').value || null;
+    // Phase 1: Client-side face analysis with MediaPipe
+    const faceImg = document.getElementById('facePreview');
+    let faceAnalysis = null;
+    let bodyAnalysis = null;
 
-    const body = {
-      image: faceImageData.base64,
-      mimeType: faceImageData.mimeType
-    };
-
-    if (bodyImageData) {
-      body.bodyImage = bodyImageData.base64;
-      body.bodyMimeType = bodyImageData.mimeType;
+    // Wait for FaceAnalyzer if not ready yet
+    if (window.FaceAnalyzer) {
+      if (!window.FaceAnalyzer.isReady()) {
+        await window.FaceAnalyzer.init();
+      }
+      if (window.FaceAnalyzer.isReady()) {
+        faceAnalysis = await window.FaceAnalyzer.analyzeFace(faceImg);
+        if (faceAnalysis && faceAnalysis.error === 'no_face_detected') {
+          throw new Error('Face not detected. Please upload a clear front-facing photo.');
+        }
+      }
     }
 
-    if (age) body.age = parseInt(age);
+    if (!faceAnalysis) {
+      throw new Error('Face analysis AI is not available. Please refresh and try again.');
+    }
+
+    // Phase 2: Body analysis if body photo provided
+    if (bodyImageLoaded && window.FaceAnalyzer) {
+      const bodyImg = document.getElementById('bodyPreview');
+      bodyAnalysis = await window.FaceAnalyzer.analyzeBody(bodyImg);
+      if (bodyAnalysis && bodyAnalysis.error) {
+        bodyAnalysis = null; // Non-critical, continue without body data
+      }
+    }
+
+    // Phase 3: Send ONLY extracted JSON data to backend (NO images)
+    const age = document.getElementById('ageInput').value || null;
+    const gender = document.getElementById('genderSelect').value || null;
+
+    const requestBody = {
+      faceAnalysis: faceAnalysis,
+      bodyAnalysis: bodyAnalysis,
+      age: age ? parseInt(age) : null,
+      gender: gender || null,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      lang: navigator.language
+    };
+
+    console.log('Sending extracted data (no images):', Object.keys(requestBody));
 
     const response = await fetch(DEMO_API_BASE + '/api/demo/diagnose', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(requestBody)
     });
 
     await analysisAnimation;
@@ -214,7 +258,7 @@ function displayResults(diagnosis) {
   document.getElementById('resultFaceDetail').textContent = diagnosis.faceShapeDetail || '';
 
   // Body Type (only if body photo was uploaded and result exists)
-  if (bodyImageData && diagnosis.bodyType) {
+  if (bodyImageLoaded && diagnosis.bodyType) {
     document.getElementById('resultBody').style.display = 'block';
     document.getElementById('resultBodyType').textContent = diagnosis.bodyType || '—';
     document.getElementById('resultBodyDetail').textContent = diagnosis.bodyTypeDetail || '';
@@ -227,8 +271,8 @@ function displayResults(diagnosis) {
 
 // ─── RESET ───
 function resetDemo() {
-  faceImageData = null;
-  bodyImageData = null;
+  faceImageLoaded = false;
+  bodyImageLoaded = false;
 
   document.getElementById('faceInput').value = '';
   document.getElementById('bodyInput').value = '';
@@ -237,6 +281,7 @@ function resetDemo() {
   document.getElementById('faceUploadZone').classList.remove('has-image');
   document.getElementById('bodyUploadZone').classList.remove('has-image');
   document.getElementById('ageInput').value = '';
+  document.getElementById('genderSelect').value = '';
   document.getElementById('progressBar').style.width = '0%';
 
   document.querySelectorAll('.analyzing-step').forEach(el => {

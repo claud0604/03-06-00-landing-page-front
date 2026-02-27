@@ -170,16 +170,45 @@
     color: var(--text-dim); margin-left: 8px; vertical-align: middle;
   }
 
-  /* ─── AGE INPUT ─── */
-  .age-section { margin-bottom: 32px; }
-  .age-section label { font-family: var(--serif); font-size: 18px; font-weight: 400; display: block; margin-bottom: 8px; }
-  .age-input {
-    width: 120px; padding: 10px 16px; font-size: 16px; font-family: var(--sans);
+  /* ─── AGE & GENDER INPUT ─── */
+  .input-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+  .input-group { flex: 0 0 auto; }
+  .input-group label { font-family: var(--serif); font-size: 18px; font-weight: 400; display: block; margin-bottom: 8px; }
+  .age-input, .gender-select {
+    padding: 10px 16px; font-size: 16px; font-family: var(--sans);
     border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
     color: var(--text); outline: none; transition: border-color 0.2s;
   }
-  .age-input:focus { border-color: var(--accent); }
-  .age-hint { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+  .age-input { width: 120px; }
+  .gender-select { width: 160px; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b9890' fill='none' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  .age-input:focus, .gender-select:focus { border-color: var(--accent); }
+  .input-hint { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+
+  /* ─── PRIVACY NOTICE ─── */
+  .privacy-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 18px; margin: 20px 0; border-radius: 8px;
+    background: rgba(80,160,80,0.06); border: 1px solid rgba(80,160,80,0.15);
+    font-size: 13px; color: var(--text-muted); line-height: 1.6;
+  }
+  .privacy-notice .shield { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ─── DATA BADGE ─── */
+  .data-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 20px; margin-bottom: 24px;
+    background: var(--warm); border: 1px solid rgba(160,120,64,0.15);
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+  }
+  .data-badge-num { font-weight: 600; font-size: 14px; }
+
+  /* ─── MP STATUS ─── */
+  .mp-status {
+    font-size: 12px; color: var(--text-dim); text-align: center;
+    margin-top: 8px; font-family: var(--mono); transition: opacity 0.3s;
+  }
+  .mp-status.ready { color: rgba(80,160,80,0.7); }
+  .mp-status.error { color: var(--coral); }
 
   /* ─── SUBMIT BTN ─── */
   .submit-btn {
@@ -330,6 +359,12 @@
 
     <!-- ========== STEP 1: UPLOAD ========== -->
     <div class="step-panel active" id="step1">
+      <div style="text-align:center;">
+        <div class="data-badge">
+          <span class="data-badge-num">12,000+</span>
+          <span data-i18n="dd_data_badge">real consultation data-powered AI</span>
+        </div>
+      </div>
       <h1 data-i18n="dd_title">Upload Your Photos</h1>
       <p class="subtitle" data-i18n="dd_subtitle">Take or upload photos for your free AI diagnosis</p>
 
@@ -362,15 +397,33 @@
         </div>
       </div>
 
-      <!-- Age -->
-      <div class="age-section">
-        <label data-i18n="dd_age_label">Age</label>
-        <input type="number" class="age-input" id="ageInput" min="10" max="99" placeholder="25">
-        <p class="age-hint" data-i18n="dd_age_hint">Age helps improve diagnosis accuracy</p>
+      <!-- Age & Gender -->
+      <div class="input-row">
+        <div class="input-group">
+          <label data-i18n="dd_age_label">Age</label>
+          <input type="number" class="age-input" id="ageInput" min="10" max="99" placeholder="25">
+          <p class="input-hint" data-i18n="dd_age_hint">Improves diagnosis accuracy</p>
+        </div>
+        <div class="input-group">
+          <label data-i18n="dd_gender_label">Gender</label>
+          <select class="gender-select" id="genderSelect">
+            <option value="" data-i18n="dd_gender_select">Select</option>
+            <option value="female" data-i18n="dd_gender_female">Female</option>
+            <option value="male" data-i18n="dd_gender_male">Male</option>
+          </select>
+          <p class="input-hint" data-i18n="dd_gender_hint">Helps with skin tone analysis</p>
+        </div>
+      </div>
+
+      <!-- Privacy Notice -->
+      <div class="privacy-notice">
+        <span class="shield">&#128274;</span>
+        <span data-i18n="dd_privacy_notice">Your photos are analyzed on-device using Google MediaPipe. Images are never uploaded to our servers — only extracted measurement data (skin color, face proportions) is used for AI diagnosis.</span>
       </div>
 
       <!-- Submit -->
       <button class="submit-btn" id="submitBtn" disabled onclick="startDiagnosis()" data-i18n="dd_submit">Start AI Diagnosis</button>
+      <p class="mp-status" id="mpStatus" data-i18n="dd_mp_loading">Loading on-device AI model...</p>
 
       <!-- Ad Zone - Bottom -->
       <div class="ad-zone" id="adZoneBottom" style="margin-top: 32px;">
@@ -524,6 +577,7 @@
   </div><!-- /main-layout -->
 </div>
 
+<script type="module" src="face-analysis.js"></script>
 <script src="i18n.js"></script>
 <script src="demo-diagnose.js"></script>
 </body>

@@ -133,6 +133,15 @@ const translations = {
     dd_retry: "Try Again with Different Photo",
     dd_error_title: "Diagnosis Failed",
     dd_error_desc: "Something went wrong. Please try again.",
+    dd_data_badge: "real consultation data-powered AI",
+    dd_privacy_notice: "Your photos are analyzed on-device using Google MediaPipe. Images are never uploaded to our servers — only extracted measurement data (skin color, face proportions) is used for AI diagnosis.",
+    dd_gender_label: "Gender",
+    dd_gender_select: "Select",
+    dd_gender_female: "Female",
+    dd_gender_male: "Male",
+    dd_gender_hint: "Helps with skin tone analysis",
+    dd_mp_loading: "Loading on-device AI model...",
+    demo_data_badge: "real consultation data-powered AI",
   },
 
   ko: {
@@ -268,6 +277,15 @@ const translations = {
     dd_retry: "다른 사진으로 다시 해보기",
     dd_error_title: "진단 실패",
     dd_error_desc: "문제가 발생했습니다. 다시 시도해주세요.",
+    dd_data_badge: "실제 컨설팅 데이터 기반 AI",
+    dd_privacy_notice: "사진은 Google MediaPipe를 사용하여 기기 내에서 분석됩니다. 이미지는 서버에 전송되지 않으며, 추출된 측정 데이터(피부색, 얼굴 비율)만 AI 진단에 사용됩니다.",
+    dd_gender_label: "성별",
+    dd_gender_select: "선택",
+    dd_gender_female: "여성",
+    dd_gender_male: "남성",
+    dd_gender_hint: "피부톤 분석에 도움이 됩니다",
+    dd_mp_loading: "기기 내 AI 모델 로딩 중...",
+    demo_data_badge: "실제 컨설팅 데이터 기반 AI",
   },
 
   ja: {
@@ -403,6 +421,15 @@ const translations = {
     dd_retry: "別の写真で再挑戦",
     dd_error_title: "診断に失敗しました",
     dd_error_desc: "問題が発生しました。もう一度お試しください。",
+    dd_data_badge: "実際のコンサルティングデータ基盤AI",
+    dd_privacy_notice: "写真はGoogle MediaPipeを使用してデバイス上で分析されます。画像はサーバーに送信されず、抽出された測定データ（肌色、顔の比率）のみがAI診断に使用されます。",
+    dd_gender_label: "性別",
+    dd_gender_select: "選択",
+    dd_gender_female: "女性",
+    dd_gender_male: "男性",
+    dd_gender_hint: "肌トーン分析に役立ちます",
+    dd_mp_loading: "デバイス上のAIモデルを読み込み中...",
+    demo_data_badge: "実際のコンサルティングデータ基盤AI",
   },
 
   zh: {
@@ -538,6 +565,15 @@ const translations = {
     dd_retry: "换张照片再试",
     dd_error_title: "诊断失败",
     dd_error_desc: "出现问题，请重试。",
+    dd_data_badge: "基于真实咨询数据的AI",
+    dd_privacy_notice: "照片使用Google MediaPipe在设备上分析。图片不会上传到服务器，仅提取的测量数据（肤色、面部比例）用于AI诊断。",
+    dd_gender_label: "性别",
+    dd_gender_select: "选择",
+    dd_gender_female: "女性",
+    dd_gender_male: "男性",
+    dd_gender_hint: "有助于肤色分析",
+    dd_mp_loading: "正在加载设备端AI模型...",
+    demo_data_badge: "基于真实咨询数据的AI",
   }
 };
 
