@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo Diagnosis — APL COLOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f1ef;
+    --surface: #e9e8e5;
+    --surface2: #dddbd7;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1916;
+    --text-muted: #5c5a56;
+    --text-dim: #9b9890;
+    --accent: #a07840;
+    --accent2: #c49656;
+    --warm: rgba(160,120,64,0.10);
+    --coral: #c75050;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif KR', serif;
+    --sans: 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #2a2a2a;
+    --surface2: #222222;
+    --border: #404040;
+    --text: #e0e0e0;
+    --text-muted: #aaaaaa;
+    --text-dim: #777777;
+    --accent: #c4a484;
+    --accent2: #d4b898;
+    --warm: rgba(196,164,132,0.12);
+    --coral: #e06060;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #1a1a1a; --surface: #2a2a2a; --surface2: #222222;
+      --border: #404040; --text: #e0e0e0; --text-muted: #aaaaaa;
+      --text-dim: #777777; --accent: #c4a484; --accent2: #d4b898;
+      --warm: rgba(196,164,132,0.12); --coral: #e06060;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ─── LAYOUT ─── */
+  .page-wrap { max-width: 1200px; margin: 0 auto; padding: 80px 24px; }
+  .content-area { max-width: 720px; margin: 0 auto; }
+
+  /* ─── TOP NAV ─── */
+  .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 16px; max-width: 720px; margin-left: auto; margin-right: auto; margin-bottom: 40px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-size: 14px; color: var(--text-muted); transition: all 0.3s; }
+  .back-btn:hover { color: var(--accent); }
+  .top-actions { display: flex; align-items: center; gap: 12px; }
+
+  /* ─── LANG SWITCHER ─── */
+  .lang-switcher { position: relative; display: flex; align-items: center; }
+  .lang-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 3px;
+    background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-dropdown {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden; z-index: 200; min-width: 120px; box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+  }
+  .lang-dropdown.open { display: block; }
+  .lang-option {
+    display: block; width: 100%; padding: 10px 16px; font-family: var(--mono);
+    font-size: 12px; color: var(--text-muted); border: none; background: none;
+    cursor: pointer; text-align: left; transition: background 0.2s;
+  }
+  .lang-option:hover { background: var(--surface2); color: var(--accent); }
+  .lang-option.active { color: var(--accent); }
+
+  /* ─── THEME TOGGLE ─── */
+  .theme-toggle {
+    width: 38px; height: 22px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 11px;
+    cursor: pointer; position: relative; transition: background 0.3s, border-color 0.3s; flex-shrink: 0;
+  }
+  .theme-toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text-dim); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s;
+  }
+  [data-theme="dark"] .theme-toggle::after, .theme-toggle.light-on::after { transform: translateX(16px); background: var(--accent); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle-icon { font-size: 13px; line-height: 1; opacity: 0.5; transition: opacity 0.2s; user-select: none; }
+  .toggle-icon.active { opacity: 1; }
+
+  /* ─── STEP INDICATOR ─── */
+  .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 40px; }
+  .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); transition: all 0.3s; }
+  .step-dot.active { background: var(--accent); border-color: var(--accent); width: 32px; border-radius: 5px; }
+  .step-dot.done { background: var(--accent); border-color: var(--accent); }
+
+  /* ─── HEADINGS ─── */
+  h1 { font-family: var(--serif); font-size: clamp(28px, 5vw, 40px); font-weight: 400; margin-bottom: 12px; line-height: 1.3; text-align: center; }
+  .subtitle { font-size: 15px; color: var(--text-muted); margin-bottom: 40px; text-align: center; }
+
+  /* ─── STEP PANELS ─── */
+  .step-panel { display: none; animation: fadeIn 0.5s ease; }
+  .step-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── STEP 1: UPLOAD ─── */
+  .upload-section { margin-bottom: 32px; }
+  .upload-section h3 { font-family: var(--serif); font-size: 18px; font-weight: 400; margin-bottom: 8px; }
+  .upload-hint { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 40px 24px;
+    text-align: center; cursor: pointer; transition: all 0.3s;
+    background: var(--surface); position: relative; overflow: hidden;
+  }
+  .upload-zone:hover { border-color: var(--accent); background: var(--warm); }
+  .upload-zone.has-image { border-style: solid; border-color: var(--accent); padding: 0; }
+  .upload-zone .upload-icon { font-size: 48px; margin-bottom: 12px; }
+  .upload-zone .upload-text { font-size: 14px; color: var(--text-muted); }
+  .upload-zone .upload-text span { color: var(--accent); font-weight: 500; text-decoration: underline; }
+  .upload-zone input[type="file"] { display: none; }
+  .upload-zone .preview-img {
+    width: 100%; max-height: 400px; object-fit: contain;
+    display: none; border-radius: 10px;
+  }
+  .upload-zone.has-image .preview-img { display: block; }
+  .upload-zone.has-image .upload-icon,
+  .upload-zone.has-image .upload-text { display: none; }
+  .upload-remove {
+    display: none; position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.6); color: white; font-size: 18px;
+    cursor: pointer; z-index: 10;
+  }
+  .upload-zone.has-image .upload-remove { display: flex; align-items: center; justify-content: center; }
+  .optional-badge {
+    display: inline-block; font-family: var(--mono); font-size: 11px;
+    padding: 2px 8px; border-radius: 3px; background: var(--surface2);
+    color: var(--text-dim); margin-left: 8px; vertical-align: middle;
+  }
+
+  /* ─── AGE INPUT ─── */
+  .age-section { margin-bottom: 32px; }
+  .age-section label { font-family: var(--serif); font-size: 18px; font-weight: 400; display: block; margin-bottom: 8px; }
+  .age-input {
+    width: 120px; padding: 10px 16px; font-size: 16px; font-family: var(--sans);
+    border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+    color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  .age-input:focus { border-color: var(--accent); }
+  .age-hint { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+
+  /* ─── SUBMIT BTN ─── */
+  .submit-btn {
+    display: block; width: 100%; padding: 16px; font-size: 16px; font-weight: 500;
+    font-family: var(--sans); background: var(--accent); color: white; border: none;
+    border-radius: 10px; cursor: pointer; transition: all 0.3s; margin-top: 24px;
+  }
+  .submit-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(160,120,64,0.3); }
+  .submit-btn:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ─── STEP 2: ANALYZING ─── */
+  .analyzing-wrap { text-align: center; padding: 60px 20px; }
+  .analyzing-icon { font-size: 64px; margin-bottom: 24px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.7; } }
+  .analyzing-title { font-family: var(--serif); font-size: 24px; font-weight: 400; margin-bottom: 12px; }
+  .analyzing-steps { margin: 24px 0; }
+  .analyzing-step { font-size: 14px; color: var(--text-dim); padding: 6px 0; transition: all 0.3s; }
+  .analyzing-step.active { color: var(--accent); font-weight: 500; }
+  .analyzing-step.done { color: var(--text-muted); }
+  .analyzing-step.done::before { content: '\2713 '; color: var(--accent); }
+
+  .progress-bar-wrap { width: 100%; max-width: 400px; margin: 24px auto; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.5s ease; }
+
+  /* ─── STEP 3: RESULT ─── */
+  .result-header { text-align: center; margin-bottom: 32px; }
+  .result-header h2 { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 8px; }
+  .result-header p { color: var(--text-muted); font-size: 14px; }
+
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; margin-bottom: 20px;
+  }
+  .result-card h3 { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 16px; }
+  .result-type { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 8px; }
+  .result-detail { font-size: 14px; color: var(--text-muted); line-height: 1.8; }
+
+  /* Blurred premium content */
+  .blur-section { position: relative; margin-bottom: 20px; }
+  .blur-content {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; filter: blur(6px); user-select: none; pointer-events: none;
+  }
+  .blur-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.02); border-radius: 12px; z-index: 2;
+  }
+  .blur-overlay .lock-icon { font-size: 32px; margin-bottom: 12px; }
+  .blur-overlay .lock-text { font-size: 15px; font-weight: 500; color: var(--text); }
+  .blur-overlay .lock-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Pricing CTA */
+  .pricing-cta {
+    background: var(--accent); color: white; border-radius: 12px;
+    padding: 36px 28px; text-align: center; margin-top: 40px;
+  }
+  .pricing-cta h3 { font-family: var(--serif); font-size: 22px; font-weight: 400; margin-bottom: 12px; }
+  .pricing-cta p { font-size: 14px; opacity: 0.9; margin-bottom: 24px; }
+  .pricing-options { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .pricing-btn {
+    display: inline-block; padding: 12px 28px; border-radius: 8px; text-decoration: none;
+    font-size: 14px; font-weight: 500; transition: all 0.2s; border: none; cursor: pointer; font-family: var(--sans);
+  }
+  .pricing-btn-primary { background: white; color: var(--accent); }
+  .pricing-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .pricing-btn-secondary { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+  .pricing-btn-secondary:hover { background: rgba(255,255,255,0.25); }
+
+  .retry-btn {
+    display: inline-block; margin-top: 16px; padding: 10px 24px; font-size: 14px;
+    color: var(--text-muted); background: none; border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: var(--sans);
+  }
+  .retry-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── AD ZONE ─── */
+  .ad-zone {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; margin: 24px 0; text-align: center; min-height: 100px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .ad-zone::before {
+    content: 'AD'; position: absolute; top: 6px; right: 10px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+    color: var(--text-dim); opacity: 0.6;
+  }
+  .ad-zone-placeholder { font-size: 12px; color: var(--text-dim); }
+
+  /* ─── ERROR ─── */
+  .error-box {
+    background: rgba(199,80,80,0.08); border: 1px solid var(--coral); border-radius: 10px;
+    padding: 24px; text-align: center; margin: 20px 0;
+  }
+  .error-box h3 { color: var(--coral); font-family: var(--serif); font-weight: 400; margin-bottom: 8px; }
+  .error-box p { font-size: 14px; color: var(--text-muted); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .page-wrap { padding: 60px 16px; }
+    .top-nav { flex-direction: column; align-items: stretch; }
+    .top-actions { justify-content: center; }
+    .upload-zone { padding: 32px 16px; }
+    .pricing-options { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <a href="demo.html" class="back-btn" data-i18n="dd_back">&larr; Back to Checklist</a>
+    <div class="top-actions">
+      <div class="lang-switcher">
+        <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()">EN</button>
+        <div class="lang-dropdown" id="langDropdown">
+          <button class="lang-option active" onclick="setLang('en')">EN &mdash; English</button>
+          <button class="lang-option" onclick="setLang('ko')">KO &mdash; &#54620;&#44397;&#50612;</button>
+          <button class="lang-option" onclick="setLang('ja')">JA &mdash; &#26085;&#26412;&#35486;</button>
+          <button class="lang-option" onclick="setLang('zh')">ZH &mdash; &#20013;&#25991;</button>
+        </div>
+      </div>
+      <div class="toggle-wrap" onclick="toggleTheme()" title="Toggle theme">
+        <span class="toggle-icon" id="icon-dark">&#127769;</span>
+        <div class="theme-toggle" id="themeToggle"></div>
+        <span class="toggle-icon" id="icon-light">&#9728;&#65039;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-area">
+    <!-- STEP INDICATOR -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <!-- ========== STEP 1: UPLOAD ========== -->
+    <div class="step-panel active" id="step1">
+      <h1 data-i18n="dd_title">Upload Your Photos</h1>
+      <p class="subtitle" data-i18n="dd_subtitle">Take or upload photos for your free AI diagnosis</p>
+
+      <!-- Ad Zone - Top -->
+      <div class="ad-zone" id="adZoneTop">
+        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+      </div>
+
+      <!-- Face Photo -->
+      <div class="upload-section">
+        <h3 data-i18n="dd_face_title">Face Photo (Front)</h3>
+        <p class="upload-hint" data-i18n="dd_face_hint">Front-facing, natural light, bare face, neutral expression</p>
+        <div class="upload-zone" id="faceUploadZone" onclick="document.getElementById('faceInput').click()">
+          <input type="file" id="faceInput" accept="image/*" capture="user" onchange="handleFileSelect(this, 'face')">
+          <button class="upload-remove" onclick="removeImage(event, 'face')">&times;</button>
+          <img class="preview-img" id="facePreview" alt="Face preview">
+          <div class="upload-icon">&#128247;</div>
+          <p class="upload-text" data-i18n="dd_upload_text">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+        </div>
+      </div>
+
+      <!-- Body Photo -->
+      <div class="upload-section">
+        <h3>
+          <span data-i18n="dd_body_title">Body Photo (Full Body)</span>
+          <span class="optional-badge" data-i18n="dd_optional">OPTIONAL</span>
+        </h3>
+        <p class="upload-hint" data-i18n="dd_body_hint">Wear form-fitting clothes for accurate body type analysis. Loose or baggy clothing makes it difficult to determine body shape.</p>
+        <div class="upload-zone" id="bodyUploadZone" onclick="document.getElementById('bodyInput').click()">
+          <input type="file" id="bodyInput" accept="image/*" onchange="handleFileSelect(this, 'body')">
+          <button class="upload-remove" onclick="removeImage(event, 'body')">&times;</button>
+          <img class="preview-img" id="bodyPreview" alt="Body preview">
+          <div class="upload-icon">&#128100;</div>
+          <p class="upload-text" data-i18n="dd_upload_text_body">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+        </div>
+      </div>
+
+      <!-- Age -->
+      <div class="age-section">
+        <label data-i18n="dd_age_label">Age</label>
+        <input type="number" class="age-input" id="ageInput" min="10" max="99" placeholder="25">
+        <p class="age-hint" data-i18n="dd_age_hint">Age helps improve diagnosis accuracy</p>
+      </div>
+
+      <!-- Submit -->
+      <button class="submit-btn" id="submitBtn" disabled onclick="startDiagnosis()" data-i18n="dd_submit">Start AI Diagnosis</button>
+
+      <!-- Ad Zone - Bottom -->
+      <div class="ad-zone" id="adZoneBottom" style="margin-top: 32px;">
+        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+      </div>
+    </div>
+
+    <!-- ========== STEP 2: ANALYZING ========== -->
+    <div class="step-panel" id="step2">
+      <div class="analyzing-wrap">
+        <div class="analyzing-icon">&#129504;</div>
+        <h2 class="analyzing-title" data-i18n="dd_analyzing_title">Analyzing Your Photos...</h2>
+        <div class="analyzing-steps">
+          <div class="analyzing-step active" id="aStep1" data-i18n="dd_astep_1">Detecting skin tone and undertone</div>
+          <div class="analyzing-step" id="aStep2" data-i18n="dd_astep_2">Analyzing facial features and proportions</div>
+          <div class="analyzing-step" id="aStep3" data-i18n="dd_astep_3">Evaluating body proportions</div>
+          <div class="analyzing-step" id="aStep4" data-i18n="dd_astep_4">Matching personal color type</div>
+          <div class="analyzing-step" id="aStep5" data-i18n="dd_astep_5">Generating your diagnosis report</div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+      </div>
+
+      <!-- Ad Zone - During Analysis -->
+      <div class="ad-zone" id="adZoneAnalysis">
+        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+      </div>
+    </div>
+
+    <!-- ========== STEP 3: RESULTS ========== -->
+    <div class="step-panel" id="step3">
+      <div class="result-header">
+        <h2 data-i18n="dd_result_title">Your Demo Diagnosis</h2>
+        <p data-i18n="dd_result_subtitle">AI-powered quick analysis result</p>
+      </div>
+
+      <!-- Personal Color Result -->
+      <div class="result-card" id="resultColor">
+        <h3 data-i18n="dd_result_color_label">Personal Color</h3>
+        <div class="result-type" id="resultColorType">—</div>
+        <p class="result-detail" id="resultColorDetail"></p>
+      </div>
+
+      <!-- Face Shape Result -->
+      <div class="result-card" id="resultFace">
+        <h3 data-i18n="dd_result_face_label">Face Shape</h3>
+        <div class="result-type" id="resultFaceType">—</div>
+        <p class="result-detail" id="resultFaceDetail"></p>
+      </div>
+
+      <!-- Body Type Result (only shown if body photo uploaded) -->
+      <div class="result-card" id="resultBody" style="display:none;">
+        <h3 data-i18n="dd_result_body_label">Body Type</h3>
+        <div class="result-type" id="resultBodyType">—</div>
+        <p class="result-detail" id="resultBodyDetail"></p>
+      </div>
+
+      <!-- Ad Zone - Between results and blur -->
+      <div class="ad-zone" id="adZoneResult">
+        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+      </div>
+
+      <!-- BLURRED: Best Colors -->
+      <div class="blur-section">
+        <div class="blur-content">
+          <h3>BEST COLORS</h3>
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <div style="width:48px;height:48px;border-radius:8px;background:#e8a090;"></div>
+            <div style="width:48px;height:48px;border-radius:8px;background:#f0c8a0;"></div>
+            <div style="width:48px;height:48px;border-radius:8px;background:#d4a878;"></div>
+            <div style="width:48px;height:48px;border-radius:8px;background:#c8e0c0;"></div>
+            <div style="width:48px;height:48px;border-radius:8px;background:#b0c8d8;"></div>
+          </div>
+          <p>Your optimal color palette based on skin undertone analysis...</p>
+        </div>
+        <div class="blur-overlay">
+          <div class="lock-icon">&#128274;</div>
+          <div class="lock-text" data-i18n="dd_blur_colors">Best & Worst Color Palette</div>
+          <div class="lock-sub" data-i18n="dd_blur_unlock">Available in full diagnosis</div>
+        </div>
+      </div>
+
+      <!-- BLURRED: Styling Recommendations -->
+      <div class="blur-section">
+        <div class="blur-content">
+          <h3>STYLING RECOMMENDATIONS</h3>
+          <p style="margin-bottom:8px;">Hair style suggestions based on your face shape...</p>
+          <p style="margin-bottom:8px;">Makeup color recommendations for your skin tone...</p>
+          <p>Fashion silhouette guide matching your body type...</p>
+        </div>
+        <div class="blur-overlay">
+          <div class="lock-icon">&#128274;</div>
+          <div class="lock-text" data-i18n="dd_blur_styling">Styling & Hair Recommendations</div>
+          <div class="lock-sub" data-i18n="dd_blur_unlock">Available in full diagnosis</div>
+        </div>
+      </div>
+
+      <!-- BLURRED: Color Characteristics Chart -->
+      <div class="blur-section">
+        <div class="blur-content">
+          <h3>COLOR CHARACTERISTICS</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>Hue: Warm ████████░░</div>
+            <div>Value: High ██████████</div>
+            <div>Chroma: Medium █████░░░░░</div>
+            <div>Contrast: Low ███░░░░░░░</div>
+          </div>
+        </div>
+        <div class="blur-overlay">
+          <div class="lock-icon">&#128274;</div>
+          <div class="lock-text" data-i18n="dd_blur_chart">Detailed Color Analysis Chart</div>
+          <div class="lock-sub" data-i18n="dd_blur_unlock">Available in full diagnosis</div>
+        </div>
+      </div>
+
+      <!-- Pricing CTA -->
+      <div class="pricing-cta">
+        <h3 data-i18n="dd_cta_title">Want the Complete Analysis?</h3>
+        <p data-i18n="dd_cta_desc">Unlock best/worst colors, styling recommendations, hair simulation, and lifetime updates with a professional colorist review.</p>
+        <div class="pricing-options">
+          <a href="index.html#pricing" class="pricing-btn pricing-btn-primary" data-i18n="dd_cta_full">Full Diagnosis &rarr;</a>
+          <a href="index.html" class="pricing-btn pricing-btn-secondary" data-i18n="dd_cta_learn">Learn More</a>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top: 24px;">
+        <button class="retry-btn" onclick="resetDemo()" data-i18n="dd_retry">Try Again with Different Photo</button>
+      </div>
+
+      <!-- Ad Zone - Bottom of results -->
+      <div class="ad-zone" id="adZoneResultBottom">
+        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+      </div>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div class="step-panel" id="stepError">
+      <div class="error-box">
+        <h3 data-i18n="dd_error_title">Diagnosis Failed</h3>
+        <p id="errorMessage" data-i18n="dd_error_desc">Something went wrong. Please try again.</p>
+      </div>
+      <div style="text-align:center;">
+        <button class="retry-btn" onclick="resetDemo()" data-i18n="dd_retry">Try Again with Different Photo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="demo-diagnose.js"></script>
+</body>
+</html>
