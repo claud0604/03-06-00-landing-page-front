@@ -58,7 +58,23 @@
 
   /* ─── LAYOUT ─── */
   .page-wrap { max-width: 1200px; margin: 0 auto; padding: 80px 24px; }
-  .content-area { max-width: 720px; margin: 0 auto; }
+  .main-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .content-area { max-width: 720px; flex: 1; min-width: 0; margin: 0 auto; }
+
+  /* ─── SIDE ADS ─── */
+  .ad-sidebar { width: 160px; flex-shrink: 0; position: sticky; top: 100px; }
+  .ad-sidebar-zone {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; text-align: center; min-height: 600px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .ad-sidebar-zone::before {
+    content: 'AD'; position: absolute; top: 6px; right: 8px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+    color: var(--text-dim); opacity: 0.6;
+  }
+  @media (max-width: 1080px) { .ad-sidebar { display: none; } .main-layout { justify-content: center; } }
 
   /* ─── TOP NAV ─── */
   .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; gap: 16px; max-width: 720px; margin-left: auto; margin-right: auto; margin-bottom: 40px; }
@@ -296,6 +312,14 @@
     </div>
   </div>
 
+  <div class="main-layout">
+  <!-- LEFT AD SIDEBAR -->
+  <div class="ad-sidebar">
+    <div class="ad-sidebar-zone" id="adSideLeft">
+      <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+    </div>
+  </div>
+
   <div class="content-area">
     <!-- STEP INDICATOR -->
     <div class="step-indicator">
@@ -308,11 +332,6 @@
     <div class="step-panel active" id="step1">
       <h1 data-i18n="dd_title">Upload Your Photos</h1>
       <p class="subtitle" data-i18n="dd_subtitle">Take or upload photos for your free AI diagnosis</p>
-
-      <!-- Ad Zone - Top -->
-      <div class="ad-zone" id="adZoneTop">
-        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
-      </div>
 
       <!-- Face Photo -->
       <div class="upload-section">
@@ -410,11 +429,6 @@
         <p class="result-detail" id="resultBodyDetail"></p>
       </div>
 
-      <!-- Ad Zone - Between results and blur -->
-      <div class="ad-zone" id="adZoneResult">
-        <span class="ad-zone-placeholder"><!-- Google Ads --></span>
-      </div>
-
       <!-- BLURRED: Best Colors -->
       <div class="blur-section">
         <div class="blur-content">
@@ -499,6 +513,15 @@
       </div>
     </div>
   </div>
+
+  <!-- RIGHT AD SIDEBAR -->
+  <div class="ad-sidebar">
+    <div class="ad-sidebar-zone" id="adSideRight">
+      <span class="ad-zone-placeholder"><!-- Google Ads --></span>
+    </div>
+  </div>
+
+  </div><!-- /main-layout -->
 </div>
 
 <script src="i18n.js"></script>
