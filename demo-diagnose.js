@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const DEMO_API_BASE = ''; // same-origin: proxied via Cloudflare Pages Function
+const DEMO_API_BASE = 'https://api-030600-landing.apls.kr';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // ─── STATE ───
