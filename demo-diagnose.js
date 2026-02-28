@@ -1,5 +1,5 @@
 // ─── CONFIG ───
-const DEMO_API_BASE = 'http://localhost:3060'; // TODO: update to production URL
+const DEMO_API_BASE = 'http://152.67.200.121:3060';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // ─── STATE ───
