@@ -1,5 +1,5 @@
 /**
- * Face Analysis Module — MediaPipe Face Landmarker + Canvas API
+ * Face Analysis Module — MediaPipe Face Landmarker + Image Segmenter + Canvas API
  * Extracts face data client-side. No images leave the device.
  * Uses Google MediaPipe (https://ai.google.dev/edge/mediapipe)
  */
@@ -7,9 +7,11 @@
 let FaceLandmarkerClass = null;
 let FilesetResolverClass = null;
 let PoseLandmarkerClass = null;
+let ImageSegmenterClass = null;
 
 let faceLandmarker = null;
 let poseLandmarker = null;
+let imageSegmenter = null;
 let initState = 'idle'; // idle | loading | ready | error
 
 const MEDIAPIPE_VERSION = '0.10.14';
@@ -24,6 +26,7 @@ async function loadVisionModules() {
     FaceLandmarkerClass = vision.FaceLandmarker;
     FilesetResolverClass = vision.FilesetResolver;
     PoseLandmarkerClass = vision.PoseLandmarker;
+    ImageSegmenterClass = vision.ImageSegmenter;
     return true;
   } catch (e) {
     console.error('[FaceAnalyzer] Failed to load MediaPipe:', e);
@@ -34,7 +37,6 @@ async function loadVisionModules() {
 async function initFaceLandmarker() {
   if (faceLandmarker) return true;
   if (initState === 'loading') {
-    // Wait for existing init
     while (initState === 'loading') await delay(100);
     return initState === 'ready';
   }
@@ -88,6 +90,32 @@ async function initPoseLandmarker() {
   }
 }
 
+async function initImageSegmenter() {
+  if (imageSegmenter) return true;
+  try {
+    if (!await loadVisionModules()) return false;
+    if (!ImageSegmenterClass) {
+      console.warn('[FaceAnalyzer] ImageSegmenter not available in this version');
+      return false;
+    }
+    const fileset = await FilesetResolverClass.forVisionTasks(`${CDN_BASE}/wasm`);
+    imageSegmenter = await ImageSegmenterClass.createFromOptions(fileset, {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite',
+        delegate: 'GPU'
+      },
+      runningMode: 'IMAGE',
+      outputCategoryMask: true,
+      outputConfidenceMasks: false
+    });
+    console.log('[FaceAnalyzer] Image Segmenter ready');
+    return true;
+  } catch (e) {
+    console.error('[FaceAnalyzer] ImageSegmenter init failed:', e);
+    return false;
+  }
+}
+
 function dispatchState(state) {
   window.dispatchEvent(new CustomEvent('faceanalyzer-state', { detail: state }));
 }
@@ -115,6 +143,7 @@ function sampleColor(ctx, x, y, radius) {
 }
 
 function avgColors(arr) {
+  if (!arr || !arr.length) return { r: 128, g: 128, b: 128 };
   var n = arr.length;
   return {
     r: Math.round(arr.reduce(function(s,c){return s+c.r;},0)/n),
@@ -148,7 +177,48 @@ function dist2D(p1, p2, w, h) {
 }
 
 function colorDist(a, b) {
+  if (!a || !b) return null;
   return Math.round(Math.sqrt((a.r-b.r)**2 + (a.g-b.g)**2 + (a.b-b.b)**2));
+}
+
+function makeColorObj(rgb) {
+  return { rgb: rgb, hex: rgbToHex(rgb), hsl: rgbToHsl(rgb) };
+}
+
+// ─── SEGMENTATION HELPERS ───
+
+function sampleFromMask(ctx, maskData, maskW, maskH, category, imgW, imgH, maxSamples) {
+  maxSamples = maxSamples || 50;
+  var scaleX = maskW / imgW;
+  var scaleY = maskH / imgH;
+  var candidates = [];
+
+  // Collect all pixels of the target category
+  for (var my = 0; my < maskH; my++) {
+    for (var mx = 0; mx < maskW; mx++) {
+      if (maskData[my * maskW + mx] === category) {
+        candidates.push({ mx: mx, my: my });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Evenly sample from candidates
+  var step = Math.max(1, Math.floor(candidates.length / maxSamples));
+  var samples = [];
+  var samplePoints = [];
+
+  for (var i = 0; i < candidates.length && samplePoints.length < maxSamples; i += step) {
+    var c = candidates[i];
+    var imgX = Math.round(c.mx / scaleX);
+    var imgY = Math.round(c.my / scaleY);
+    var color = sampleColor(ctx, imgX, imgY, 1);
+    samples.push(color);
+    samplePoints.push({ x: imgX, y: imgY, color: color });
+  }
+
+  return { avg: avgColors(samples), points: samplePoints };
 }
 
 // ─── FACE ANALYSIS ───
@@ -167,45 +237,165 @@ async function analyzeFace(imgEl) {
   if (!res.faceLandmarks || !res.faceLandmarks.length) return { error: 'no_face_detected' };
 
   var lm = res.faceLandmarks[0];
+  var samplePoints = { skin: [], hair: [], eyebrow: [], eye: [], lip: [], neck: [], background: [] };
 
-  // Skin color — sample multiple cheek/forehead regions
-  var skinIdx = [234, 454, 50, 280, 187, 411];
+  // ── Image Segmentation (lazy init) ──
+  var segMask = null;
+  var segMaskW = 0, segMaskH = 0;
+  try {
+    if (await initImageSegmenter()) {
+      var segResult = imageSegmenter.segment(canvas);
+      if (segResult && segResult.categoryMask) {
+        var mask = segResult.categoryMask;
+        segMaskW = mask.width;
+        segMaskH = mask.height;
+        // Copy mask data before it gets recycled
+        segMask = new Uint8Array(mask.getAsUint8Array());
+        mask.close();
+      }
+    }
+  } catch (e) {
+    console.warn('[FaceAnalyzer] Segmentation failed, using fallback:', e.message);
+  }
+
+  // ── Skin color — 8 points (cheeks, forehead, nose bridge, chin area) ──
+  var skinIdx = [234, 454, 50, 280, 187, 411, 168, 200];
   var skinSamples = skinIdx.map(function(i) {
-    return sampleColor(ctx, Math.round(lm[i].x*w), Math.round(lm[i].y*h), 4);
+    var px = Math.round(lm[i].x * w);
+    var py = Math.round(lm[i].y * h);
+    var color = sampleColor(ctx, px, py, 4);
+    samplePoints.skin.push({ x: px, y: py, color: color });
+    return color;
   });
   var skin = avgColors(skinSamples);
 
-  // Hair color — sample above forehead top landmark
-  var fhTop = lm[10];
-  var hairY = Math.max(3, Math.round(fhTop.y * h) - 30);
-  var hair = sampleColor(ctx, Math.round(fhTop.x * w), hairY, 5);
+  // ── Hair color — Image Segmentation or fallback ──
+  var hair;
+  var hairFromSeg = false;
+  if (segMask) {
+    var hairResult = sampleFromMask(ctx, segMask, segMaskW, segMaskH, 1, w, h, 50);
+    if (hairResult) {
+      hair = hairResult.avg;
+      samplePoints.hair = hairResult.points.slice(0, 10); // Keep max 10 for visualization
+      hairFromSeg = true;
+    }
+  }
+  if (!hairFromSeg) {
+    // Fallback: sample 3 points above forehead
+    var fhTop = lm[10];
+    var fhX = Math.round(fhTop.x * w);
+    var hairPoints = [
+      { x: fhX - 15, y: Math.max(3, Math.round(fhTop.y * h) - 30) },
+      { x: fhX, y: Math.max(3, Math.round(fhTop.y * h) - 25) },
+      { x: fhX + 15, y: Math.max(3, Math.round(fhTop.y * h) - 30) }
+    ];
+    var hairSamples = hairPoints.map(function(p) {
+      var color = sampleColor(ctx, p.x, p.y, 5);
+      samplePoints.hair.push({ x: p.x, y: p.y, color: color });
+      return color;
+    });
+    hair = avgColors(hairSamples);
+  }
 
-  // Eye/iris color (iris landmarks: 468-472 left, 473-477 right)
+  // ── Eyebrow color — 8 points (4 left, 4 right) ──
+  var browIdxL = [66, 105, 55, 65];
+  var browIdxR = [296, 334, 285, 295];
+  var browSamples = [];
+  browIdxL.concat(browIdxR).forEach(function(i) {
+    var px = Math.round(lm[i].x * w);
+    var py = Math.round(lm[i].y * h);
+    var color = sampleColor(ctx, px, py, 2);
+    samplePoints.eyebrow.push({ x: px, y: py, color: color });
+    browSamples.push(color);
+  });
+  var eyebrow = avgColors(browSamples);
+
+  // ── Eye/iris color (iris landmarks: 468 left, 473 right) ──
   var eye = null;
   if (lm.length > 473) {
-    var le = sampleColor(ctx, Math.round(lm[468].x*w), Math.round(lm[468].y*h), 2);
-    var re = sampleColor(ctx, Math.round(lm[473].x*w), Math.round(lm[473].y*h), 2);
+    var leX = Math.round(lm[468].x * w), leY = Math.round(lm[468].y * h);
+    var reX = Math.round(lm[473].x * w), reY = Math.round(lm[473].y * h);
+    var le = sampleColor(ctx, leX, leY, 2);
+    var re = sampleColor(ctx, reX, reY, 2);
+    samplePoints.eye.push({ x: leX, y: leY, color: le });
+    samplePoints.eye.push({ x: reX, y: reY, color: re });
     eye = avgColors([le, re]);
   }
 
-  // Background color — sample corners
-  var bg = avgColors([
-    sampleColor(ctx, 5, 5),
-    sampleColor(ctx, w-5, 5),
-    sampleColor(ctx, 5, h-5),
-    sampleColor(ctx, w-5, h-5)
-  ]);
+  // ── Lip color — 4 points (upper center, lower center, left corner, right corner) ──
+  var lipIdx = [13, 14, 82, 312];
+  var lipSamples = lipIdx.map(function(i) {
+    var px = Math.round(lm[i].x * w);
+    var py = Math.round(lm[i].y * h);
+    var color = sampleColor(ctx, px, py, 2);
+    samplePoints.lip.push({ x: px, y: py, color: color });
+    return color;
+  });
+  var lip = avgColors(lipSamples);
 
-  // Face proportions (normalized to cheekbone width)
+  // ── Neck color — 3 points below chin (landmark 152) ──
+  var chinX = Math.round(lm[152].x * w);
+  var chinY = Math.round(lm[152].y * h);
+  var neckOffsets = [20, 30, 40];
+  var neckSamples = [];
+  neckOffsets.forEach(function(offset) {
+    var ny = Math.min(h - 3, chinY + offset);
+    var color = sampleColor(ctx, chinX, ny, 3);
+    samplePoints.neck.push({ x: chinX, y: ny, color: color });
+    neckSamples.push(color);
+  });
+  var neck = avgColors(neckSamples);
+
+  // ── Background color — 7 points (top 5 + left/right middle), skip bottom ──
+  var bgPositions = [
+    { x: 5, y: 5 },
+    { x: Math.round(w * 0.25), y: 5 },
+    { x: Math.round(w * 0.5), y: 5 },
+    { x: Math.round(w * 0.75), y: 5 },
+    { x: w - 5, y: 5 },
+    { x: 5, y: Math.round(h * 0.35) },
+    { x: w - 5, y: Math.round(h * 0.35) }
+  ];
+
+  // If segmentation available, filter to only background pixels
+  var bgSamples = [];
+  if (segMask) {
+    var segScaleX = segMaskW / w;
+    var segScaleY = segMaskH / h;
+    bgPositions.forEach(function(p) {
+      var mx = Math.min(segMaskW - 1, Math.round(p.x * segScaleX));
+      var my = Math.min(segMaskH - 1, Math.round(p.y * segScaleY));
+      if (segMask[my * segMaskW + mx] === 0) { // 0 = background
+        var color = sampleColor(ctx, p.x, p.y, 3);
+        samplePoints.background.push({ x: p.x, y: p.y, color: color });
+        bgSamples.push(color);
+      }
+    });
+  }
+
+  if (bgSamples.length === 0) {
+    // Fallback: use all top + middle points without segmentation filter
+    bgPositions.forEach(function(p) {
+      var color = sampleColor(ctx, p.x, p.y, 3);
+      samplePoints.background.push({ x: p.x, y: p.y, color: color });
+      bgSamples.push(color);
+    });
+  }
+  var bg = avgColors(bgSamples);
+
+  // ── Face proportions (normalized to cheekbone width) ──
   var fhW = dist2D(lm[70], lm[300], w, h);
   var cbW = dist2D(lm[234], lm[454], w, h);
   var jwW = dist2D(lm[172], lm[397], w, h);
   var fcH = dist2D(lm[10], lm[152], w, h);
 
   return {
-    skinColor:  { rgb: skin, hex: rgbToHex(skin), hsl: rgbToHsl(skin) },
-    hairColor:  { rgb: hair, hex: rgbToHex(hair), hsl: rgbToHsl(hair) },
-    eyeColor:   eye ? { rgb: eye, hex: rgbToHex(eye), hsl: rgbToHsl(eye) } : null,
+    skinColor:     makeColorObj(skin),
+    hairColor:     makeColorObj(hair),
+    eyeColor:      eye ? makeColorObj(eye) : null,
+    eyebrowColor:  makeColorObj(eyebrow),
+    lipColor:      makeColorObj(lip),
+    neckColor:     makeColorObj(neck),
     backgroundColor: { rgb: bg, hex: rgbToHex(bg) },
     faceProportions: {
       foreheadRatio: +(fhW/cbW).toFixed(3),
@@ -214,8 +404,12 @@ async function analyzeFace(imgEl) {
     },
     contrast: {
       skinHair: colorDist(skin, hair),
-      skinEye:  eye ? colorDist(skin, eye) : null
-    }
+      skinEye:  eye ? colorDist(skin, eye) : null,
+      skinLip:  colorDist(skin, lip),
+      skinNeck: colorDist(skin, neck)
+    },
+    samplePoints: samplePoints,
+    segmentationUsed: !!segMask
   };
 }
 
@@ -244,13 +438,21 @@ async function analyzeBody(imgEl) {
     w, h
   );
 
+  var samplePoints = [
+    { x: Math.round(lm[11].x * w), y: Math.round(lm[11].y * h), label: 'L.Shoulder' },
+    { x: Math.round(lm[12].x * w), y: Math.round(lm[12].y * h), label: 'R.Shoulder' },
+    { x: Math.round(lm[23].x * w), y: Math.round(lm[23].y * h), label: 'L.Hip' },
+    { x: Math.round(lm[24].x * w), y: Math.round(lm[24].y * h), label: 'R.Hip' }
+  ];
+
   return {
     bodyProportions: {
       shoulderHipRatio: +(shW/hpW).toFixed(3),
       shoulderWidth: Math.round(shW),
       hipWidth: Math.round(hpW),
       torsoLength: Math.round(torso)
-    }
+    },
+    samplePoints: samplePoints
   };
 }
 

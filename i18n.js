@@ -166,6 +166,14 @@ const translations = {
     dd_modal_tip_pose3: "Full body visible (head to feet)",
     dd_modal_cancel: "Cancel",
     dd_modal_save: "Save",
+    dd_viz_title: "Measurement Points",
+    dd_viz_skin: "Skin",
+    dd_viz_hair: "Hair",
+    dd_viz_eyebrow: "Eyebrow",
+    dd_viz_eye: "Eye",
+    dd_viz_lip: "Lip",
+    dd_viz_neck: "Neck",
+    dd_viz_background: "Background",
   },
 
   ko: {
@@ -334,6 +342,14 @@ const translations = {
     dd_modal_tip_pose3: "머리부터 발끝까지 보이도록",
     dd_modal_cancel: "취소",
     dd_modal_save: "저장",
+    dd_viz_title: "측정 포인트",
+    dd_viz_skin: "피부",
+    dd_viz_hair: "머리카락",
+    dd_viz_eyebrow: "눈썹",
+    dd_viz_eye: "눈동자",
+    dd_viz_lip: "입술",
+    dd_viz_neck: "목",
+    dd_viz_background: "배경",
   },
 
   ja: {
@@ -502,6 +518,14 @@ const translations = {
     dd_modal_tip_pose3: "頭からつま先まで全身が見えるように",
     dd_modal_cancel: "キャンセル",
     dd_modal_save: "保存",
+    dd_viz_title: "測定ポイント",
+    dd_viz_skin: "肌",
+    dd_viz_hair: "髪",
+    dd_viz_eyebrow: "眉",
+    dd_viz_eye: "瞳",
+    dd_viz_lip: "唇",
+    dd_viz_neck: "首",
+    dd_viz_background: "背景",
   },
 
   zh: {
@@ -670,6 +694,14 @@ const translations = {
     dd_modal_tip_pose3: "全身可见（从头到脚）",
     dd_modal_cancel: "取消",
     dd_modal_save: "保存",
+    dd_viz_title: "测量点",
+    dd_viz_skin: "皮肤",
+    dd_viz_hair: "头发",
+    dd_viz_eyebrow: "眉毛",
+    dd_viz_eye: "瞳孔",
+    dd_viz_lip: "嘴唇",
+    dd_viz_neck: "脖子",
+    dd_viz_background: "背景",
   }
 };
 

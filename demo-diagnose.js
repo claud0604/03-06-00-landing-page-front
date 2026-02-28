@@ -5,6 +5,19 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 // ─── STATE ───
 let faceImageLoaded = false;
 let bodyImageLoaded = false;
+let lastFaceAnalysis = null;
+let lastBodyAnalysis = null;
+
+// ─── VISUALIZATION COLORS ───
+const VIZ_COLORS = {
+  skin:       { stroke: '#3b82f6', label: 'Skin' },
+  hair:       { stroke: '#22c55e', label: 'Hair' },
+  eyebrow:    { stroke: '#a855f7', label: 'Eyebrow' },
+  eye:        { stroke: '#ef4444', label: 'Eye' },
+  lip:        { stroke: '#ec4899', label: 'Lip' },
+  neck:       { stroke: '#f97316', label: 'Neck' },
+  background: { stroke: '#6b7280', label: 'Background' }
+};
 
 // ─── THEME SYSTEM ───
 const html = document.documentElement;
@@ -50,11 +63,11 @@ window.addEventListener('faceanalyzer-state', (e) => {
   const el = document.getElementById('mpStatus');
   if (!el) return;
   if (e.detail === 'ready') {
-    el.textContent = '✓ On-device AI ready';
+    el.textContent = '\u2713 On-device AI ready';
     el.className = 'mp-status ready';
     setTimeout(() => { el.style.opacity = '0'; }, 2000);
   } else if (e.detail === 'error') {
-    el.textContent = '⚠ AI model failed to load';
+    el.textContent = '\u26a0 AI model failed to load';
     el.className = 'mp-status error';
   }
 });
@@ -66,7 +79,6 @@ let bodyModalDataUrl = null;
 function openFaceModal() {
   document.getElementById('faceModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Restore preview if already has image
   if (faceModalDataUrl) {
     document.getElementById('faceModalPreview').src = faceModalDataUrl;
     document.getElementById('faceModalUpload').classList.add('has-image');
@@ -77,7 +89,6 @@ function openFaceModal() {
 function closeFaceModal() {
   document.getElementById('faceModal').classList.remove('open');
   document.body.style.overflow = '';
-  // If not saved, reset modal upload state
   if (!faceImageLoaded) {
     faceModalDataUrl = null;
     document.getElementById('faceInput').value = '';
@@ -290,6 +301,9 @@ async function startDiagnosis() {
       throw new Error('Face analysis AI is not available. Please refresh and try again.');
     }
 
+    // Store for visualization
+    lastFaceAnalysis = faceAnalysis;
+
     // Phase 2: Body analysis if body photo provided
     if (bodyImageLoaded && window.FaceAnalyzer) {
       const bodyImg = document.getElementById('bodyPreview');
@@ -299,9 +313,15 @@ async function startDiagnosis() {
       }
     }
 
+    // Store for visualization
+    lastBodyAnalysis = bodyAnalysis;
+
     // Phase 3: Send ONLY extracted JSON data to backend (NO images)
     const age = document.getElementById('ageInput').value || null;
     const gender = document.getElementById('genderSelect').value || null;
+
+    // Get current language from i18n or navigator
+    const currentLang = (typeof getCurrentLang === 'function') ? getCurrentLang() : navigator.language;
 
     const requestBody = {
       faceAnalysis: faceAnalysis,
@@ -309,7 +329,7 @@ async function startDiagnosis() {
       age: age ? parseInt(age) : null,
       gender: gender || null,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      lang: navigator.language
+      lang: currentLang
     };
 
     console.log('Sending extracted data (no images):', Object.keys(requestBody));
@@ -345,26 +365,179 @@ async function startDiagnosis() {
   }
 }
 
+// ─── VISUALIZATION ───
+function drawFaceVisualization() {
+  if (!lastFaceAnalysis || !lastFaceAnalysis.samplePoints) return;
+
+  const canvas = document.getElementById('faceResultCanvas');
+  const ctx = canvas.getContext('2d');
+  const faceImg = document.getElementById('facePreview');
+
+  const imgW = faceImg.naturalWidth || faceImg.width;
+  const imgH = faceImg.naturalHeight || faceImg.height;
+
+  // Scale canvas to fit max 360px width
+  const maxW = 360;
+  const scale = Math.min(maxW / imgW, 1);
+  canvas.width = Math.round(imgW * scale);
+  canvas.height = Math.round(imgH * scale);
+
+  ctx.drawImage(faceImg, 0, 0, canvas.width, canvas.height);
+
+  const sp = lastFaceAnalysis.samplePoints;
+  const scaleX = canvas.width / imgW;
+  const scaleY = canvas.height / imgH;
+
+  // Draw points for each category
+  Object.keys(sp).forEach(function(category) {
+    var points = sp[category];
+    var vizColor = VIZ_COLORS[category];
+    if (!vizColor || !points || !points.length) return;
+
+    points.forEach(function(p) {
+      var cx = p.x * scaleX;
+      var cy = p.y * scaleY;
+      var r = 5;
+
+      // Fill with extracted color
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgb(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ')';
+      ctx.fill();
+
+      // Stroke with category color
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = vizColor.stroke;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  });
+}
+
+function drawBodyVisualization() {
+  if (!lastBodyAnalysis || !lastBodyAnalysis.samplePoints) return;
+
+  var wrap = document.getElementById('bodyCanvasWrap');
+  wrap.style.display = 'block';
+
+  var canvas = document.getElementById('bodyResultCanvas');
+  var ctx = canvas.getContext('2d');
+  var bodyImg = document.getElementById('bodyPreview');
+
+  var imgW = bodyImg.naturalWidth || bodyImg.width;
+  var imgH = bodyImg.naturalHeight || bodyImg.height;
+
+  var maxW = 240;
+  var scale = Math.min(maxW / imgW, 1);
+  canvas.width = Math.round(imgW * scale);
+  canvas.height = Math.round(imgH * scale);
+
+  ctx.drawImage(bodyImg, 0, 0, canvas.width, canvas.height);
+
+  var scaleX = canvas.width / imgW;
+  var scaleY = canvas.height / imgH;
+
+  lastBodyAnalysis.samplePoints.forEach(function(p) {
+    var cx = p.x * scaleX;
+    var cy = p.y * scaleY;
+
+    // Draw point
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+    ctx.fill();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw label
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.strokeText(p.label, cx + 10, cy + 4);
+    ctx.fillText(p.label, cx + 10, cy + 4);
+  });
+}
+
+function buildLegend() {
+  if (!lastFaceAnalysis) return;
+
+  var legend = document.getElementById('vizLegend');
+  legend.innerHTML = '';
+
+  var sp = lastFaceAnalysis.samplePoints;
+  var colors = lastFaceAnalysis;
+
+  var items = [
+    { key: 'skin', colorObj: colors.skinColor },
+    { key: 'hair', colorObj: colors.hairColor },
+    { key: 'eyebrow', colorObj: colors.eyebrowColor },
+    { key: 'eye', colorObj: colors.eyeColor },
+    { key: 'lip', colorObj: colors.lipColor },
+    { key: 'neck', colorObj: colors.neckColor },
+    { key: 'background', colorObj: colors.backgroundColor }
+  ];
+
+  items.forEach(function(item) {
+    if (!sp[item.key] || !sp[item.key].length) return;
+    var viz = VIZ_COLORS[item.key];
+
+    var el = document.createElement('div');
+    el.className = 'viz-legend-item';
+
+    var dot = document.createElement('span');
+    dot.className = 'viz-legend-dot';
+    dot.style.borderColor = viz.stroke;
+    dot.style.backgroundColor = 'transparent';
+    el.appendChild(dot);
+
+    var label = document.createElement('span');
+    label.textContent = viz.label;
+    el.appendChild(label);
+
+    if (item.colorObj && item.colorObj.hex) {
+      var swatch = document.createElement('span');
+      swatch.className = 'viz-legend-swatch';
+      swatch.style.backgroundColor = item.colorObj.hex;
+      swatch.title = item.colorObj.hex;
+      el.appendChild(swatch);
+    }
+
+    legend.appendChild(el);
+  });
+}
+
 // ─── DISPLAY RESULTS ───
 function displayResults(diagnosis) {
   // Personal Color
-  document.getElementById('resultColorType').textContent = diagnosis.personalColor || '—';
+  document.getElementById('resultColorType').textContent = diagnosis.personalColor || '\u2014';
   document.getElementById('resultColorDetail').textContent = diagnosis.personalColorDetail || '';
 
   // Face Shape
-  document.getElementById('resultFaceType').textContent = diagnosis.faceShape || '—';
+  document.getElementById('resultFaceType').textContent = diagnosis.faceShape || '\u2014';
   document.getElementById('resultFaceDetail').textContent = diagnosis.faceShapeDetail || '';
 
   // Body Type (only if body photo was uploaded and result exists)
   if (bodyImageLoaded && diagnosis.bodyType) {
     document.getElementById('resultBody').style.display = 'block';
-    document.getElementById('resultBodyType').textContent = diagnosis.bodyType || '—';
+    document.getElementById('resultBodyType').textContent = diagnosis.bodyType || '\u2014';
     document.getElementById('resultBodyDetail').textContent = diagnosis.bodyTypeDetail || '';
   } else {
     document.getElementById('resultBody').style.display = 'none';
   }
 
   goToStep(3);
+
+  // Draw visualizations after step transition
+  setTimeout(function() {
+    drawFaceVisualization();
+    if (bodyImageLoaded && lastBodyAnalysis) {
+      drawBodyVisualization();
+    }
+    buildLegend();
+  }, 100);
 }
 
 // ─── RESET ───
@@ -373,6 +546,8 @@ function resetDemo() {
   bodyImageLoaded = false;
   faceModalDataUrl = null;
   bodyModalDataUrl = null;
+  lastFaceAnalysis = null;
+  lastBodyAnalysis = null;
 
   document.getElementById('faceInput').value = '';
   document.getElementById('bodyInput').value = '';
@@ -389,6 +564,14 @@ function resetDemo() {
   document.getElementById('ageInput').value = '';
   document.getElementById('genderSelect').value = '';
   document.getElementById('progressBar').style.width = '0%';
+
+  // Reset visualization
+  var faceCanvas = document.getElementById('faceResultCanvas');
+  faceCanvas.getContext('2d').clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+  var bodyCanvas = document.getElementById('bodyResultCanvas');
+  bodyCanvas.getContext('2d').clearRect(0, 0, bodyCanvas.width, bodyCanvas.height);
+  document.getElementById('bodyCanvasWrap').style.display = 'none';
+  document.getElementById('vizLegend').innerHTML = '';
 
   document.querySelectorAll('.analyzing-step').forEach(el => {
     el.classList.remove('active', 'done');
