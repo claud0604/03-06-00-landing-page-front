@@ -307,6 +307,87 @@
   .error-box h3 { color: var(--coral); font-family: var(--serif); font-weight: 400; margin-bottom: 8px; }
   .error-box p { font-size: 14px; color: var(--text-muted); }
 
+  /* ─── PHOTO MODAL ─── */
+  .modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 10000;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal.open { display: flex; }
+  .modal-content {
+    background: var(--bg); border-radius: 12px; width: 100%; max-width: 680px;
+    max-height: 90vh; overflow-y: auto; border: 1px solid var(--border);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px 0; position: sticky; top: 0; background: var(--bg);
+    border-radius: 12px 12px 0 0; z-index: 2;
+  }
+  .modal-header h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; }
+  .modal-close {
+    width: 32px; height: 32px; border: none; background: var(--surface);
+    border-radius: 50%; font-size: 18px; cursor: pointer; color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--surface2); color: var(--text); }
+  .modal-desc { padding: 8px 24px 16px; font-size: 14px; color: var(--text-muted); }
+
+  .guide-visual {
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; margin: 0 24px 16px; background: var(--surface);
+    border-radius: 12px; gap: 16px;
+  }
+  .guide-visual svg { color: var(--text-dim); }
+  .guide-visual-text { font-size: 13px; color: var(--text-muted); max-width: 240px; line-height: 1.6; }
+
+  .guide-tips { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 24px 16px; }
+  @media (max-width: 500px) { .guide-tips { grid-template-columns: 1fr; } }
+  .tips-column h4 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--accent); }
+  .tips-column ul { list-style: none; font-size: 12px; color: var(--text-muted); line-height: 1.8; }
+  .tips-column ul li::before { content: '·  '; color: var(--accent); font-weight: bold; }
+
+  .modal-divider { border: none; border-top: 1px solid var(--border); margin: 8px 24px 16px; }
+
+  .modal-upload-area {
+    margin: 0 24px 16px; border: 2px dashed var(--border); border-radius: 12px;
+    padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s;
+    background: var(--surface); position: relative; overflow: hidden;
+  }
+  .modal-upload-area:hover { border-color: var(--accent); background: var(--warm); }
+  .modal-upload-area.has-image { border-style: solid; border-color: var(--accent); padding: 0; }
+  .modal-upload-area .mu-icon { font-size: 40px; margin-bottom: 8px; }
+  .modal-upload-area .mu-text { font-size: 13px; color: var(--text-muted); }
+  .modal-upload-area .mu-text span { color: var(--accent); text-decoration: underline; }
+  .modal-upload-area .mu-preview {
+    width: 100%; max-height: 300px; object-fit: contain; display: none; border-radius: 10px;
+  }
+  .modal-upload-area.has-image .mu-preview { display: block; }
+  .modal-upload-area.has-image .mu-icon,
+  .modal-upload-area.has-image .mu-text { display: none; }
+  .mu-remove {
+    display: none; position: absolute; top: 10px; right: 10px;
+    width: 28px; height: 28px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.6); color: white; font-size: 16px;
+    cursor: pointer; z-index: 5; align-items: center; justify-content: center;
+  }
+  .modal-upload-area.has-image .mu-remove { display: flex; }
+
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 12px;
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    position: sticky; bottom: 0; background: var(--bg);
+    border-radius: 0 0 12px 12px;
+  }
+  .mbtn {
+    padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    font-family: var(--sans); cursor: pointer; transition: all 0.2s; border: none;
+  }
+  .mbtn-cancel { background: var(--surface); color: var(--text-muted); }
+  .mbtn-cancel:hover { background: var(--surface2); }
+  .mbtn-save { background: var(--accent); color: white; }
+  .mbtn-save:hover { background: var(--accent2); }
+  .mbtn-save:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; }
+
   /* ─── RESPONSIVE ─── */
   @media (max-width: 768px) {
     .page-wrap { padding: 60px 16px; }
@@ -314,6 +395,7 @@
     .top-actions { justify-content: center; }
     .upload-zone { padding: 32px 16px; }
     .pricing-options { flex-direction: column; align-items: center; }
+    .guide-visual { flex-direction: column; text-align: center; }
   }
 </style>
 </head>
@@ -372,12 +454,16 @@
       <div class="upload-section">
         <h3 data-i18n="dd_face_title">Face Photo (Front)</h3>
         <p class="upload-hint" data-i18n="dd_face_hint">Front-facing, natural light, bare face, neutral expression</p>
-        <div class="upload-zone" id="faceUploadZone" onclick="document.getElementById('faceInput').click()">
-          <input type="file" id="faceInput" accept="image/*" capture="user" onchange="handleFileSelect(this, 'face')">
+        <div class="upload-zone" id="faceUploadZone" onclick="openFaceModal()">
           <button class="upload-remove" onclick="removeImage(event, 'face')">&times;</button>
           <img class="preview-img" id="facePreview" alt="Face preview">
           <div class="upload-icon">&#128247;</div>
           <p class="upload-text" data-i18n="dd_upload_text">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+        </div>
+        <!-- Privacy Notice -->
+        <div class="privacy-notice">
+          <span class="shield">&#128274;</span>
+          <span data-i18n="dd_privacy_notice">Your photos are analyzed on-device using Google MediaPipe. Images are never uploaded to our servers — only extracted measurement data (skin color, face proportions) is used for AI diagnosis.</span>
         </div>
       </div>
 
@@ -388,8 +474,7 @@
           <span class="optional-badge" data-i18n="dd_optional">OPTIONAL</span>
         </h3>
         <p class="upload-hint" data-i18n="dd_body_hint">Wear form-fitting clothes for accurate body type analysis. Loose or baggy clothing makes it difficult to determine body shape.</p>
-        <div class="upload-zone" id="bodyUploadZone" onclick="document.getElementById('bodyInput').click()">
-          <input type="file" id="bodyInput" accept="image/*" onchange="handleFileSelect(this, 'body')">
+        <div class="upload-zone" id="bodyUploadZone" onclick="openBodyModal()">
           <button class="upload-remove" onclick="removeImage(event, 'body')">&times;</button>
           <img class="preview-img" id="bodyPreview" alt="Body preview">
           <div class="upload-icon">&#128100;</div>
@@ -413,12 +498,6 @@
           </select>
           <p class="input-hint" data-i18n="dd_gender_hint">Helps with skin tone analysis</p>
         </div>
-      </div>
-
-      <!-- Privacy Notice -->
-      <div class="privacy-notice">
-        <span class="shield">&#128274;</span>
-        <span data-i18n="dd_privacy_notice">Your photos are analyzed on-device using Google MediaPipe. Images are never uploaded to our servers — only extracted measurement data (skin color, face proportions) is used for AI diagnosis.</span>
       </div>
 
       <!-- Submit -->
@@ -575,6 +654,123 @@
   </div>
 
   </div><!-- /main-layout -->
+</div>
+
+<!-- ========== FACE PHOTO MODAL ========== -->
+<div class="modal" id="faceModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 data-i18n="dd_modal_face_title">Face Photo Guide</h3>
+      <button class="modal-close" onclick="closeFaceModal()">&times;</button>
+    </div>
+    <p class="modal-desc" data-i18n="dd_modal_face_desc">Follow these tips for accurate skin tone and face shape analysis</p>
+
+    <div class="guide-visual">
+      <svg width="80" height="100" viewBox="0 0 80 100">
+        <ellipse cx="40" cy="45" rx="28" ry="35" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="30" cy="38" r="3" fill="currentColor"/>
+        <circle cx="50" cy="38" r="3" fill="currentColor"/>
+        <path d="M33 55 Q40 62 47 55" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="40" y1="5" x2="40" y2="15" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+        <line x1="7" y1="45" x2="17" y2="45" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+        <line x1="63" y1="45" x2="73" y2="45" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+      </svg>
+      <div class="guide-visual-text" data-i18n="dd_modal_face_guide">Front-facing photo only. The AI analyzes skin color, face proportions, and contrast from your front view.</div>
+    </div>
+
+    <div class="guide-tips">
+      <div class="tips-column">
+        <h4 data-i18n="dd_modal_lighting">Lighting</h4>
+        <ul>
+          <li data-i18n="dd_modal_tip_light1">Natural daylight is best</li>
+          <li data-i18n="dd_modal_tip_light2">Avoid strong shadows on face</li>
+          <li data-i18n="dd_modal_tip_light3">No colored lighting (LED, neon)</li>
+        </ul>
+      </div>
+      <div class="tips-column">
+        <h4 data-i18n="dd_modal_appearance">Appearance</h4>
+        <ul>
+          <li data-i18n="dd_modal_tip_app1">Bare face (no makeup)</li>
+          <li data-i18n="dd_modal_tip_app2">Hair pulled back from face</li>
+          <li data-i18n="dd_modal_tip_app3">Neutral expression, eyes forward</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-upload-area" id="faceModalUpload" onclick="document.getElementById('faceInput').click()">
+      <input type="file" id="faceInput" accept="image/*" capture="user" onchange="handleModalUpload(this, 'face')" style="display:none">
+      <button class="mu-remove" onclick="removeModalImage(event, 'face')">&times;</button>
+      <img class="mu-preview" id="faceModalPreview" alt="Face preview">
+      <div class="mu-icon">&#128247;</div>
+      <p class="mu-text" data-i18n="dd_upload_text">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeFaceModal()" data-i18n="dd_modal_cancel">Cancel</button>
+      <button class="mbtn mbtn-save" id="faceSaveBtn" disabled onclick="saveFacePhoto()" data-i18n="dd_modal_save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== BODY PHOTO MODAL ========== -->
+<div class="modal" id="bodyModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 data-i18n="dd_modal_body_title">Body Photo Guide</h3>
+      <button class="modal-close" onclick="closeBodyModal()">&times;</button>
+    </div>
+    <p class="modal-desc" data-i18n="dd_modal_body_desc">Follow these tips for accurate body type analysis</p>
+
+    <div class="guide-visual">
+      <svg width="60" height="120" viewBox="0 0 60 120">
+        <circle cx="30" cy="14" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+        <line x1="30" y1="24" x2="30" y2="70" stroke="currentColor" stroke-width="2"/>
+        <line x1="10" y1="42" x2="50" y2="42" stroke="currentColor" stroke-width="2"/>
+        <line x1="30" y1="70" x2="15" y2="110" stroke="currentColor" stroke-width="2"/>
+        <line x1="30" y1="70" x2="45" y2="110" stroke="currentColor" stroke-width="2"/>
+        <line x1="5" y1="42" x2="10" y2="42" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+        <line x1="50" y1="42" x2="55" y2="42" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+        <line x1="18" y1="68" x2="42" y2="68" stroke="currentColor" stroke-width="1" stroke-dasharray="3"/>
+      </svg>
+      <div class="guide-visual-text" data-i18n="dd_modal_body_guide">Full body front photo. The AI measures shoulder and hip width ratio to determine your body type.</div>
+    </div>
+
+    <div class="guide-tips">
+      <div class="tips-column">
+        <h4 data-i18n="dd_modal_clothing">Clothing</h4>
+        <ul>
+          <li data-i18n="dd_modal_tip_cloth1">Wear form-fitting clothes</li>
+          <li data-i18n="dd_modal_tip_cloth2">Avoid oversized or layered outfits</li>
+          <li data-i18n="dd_modal_tip_cloth3">Solid colors preferred</li>
+        </ul>
+      </div>
+      <div class="tips-column">
+        <h4 data-i18n="dd_modal_posture">Posture</h4>
+        <ul>
+          <li data-i18n="dd_modal_tip_pose1">Stand straight, arms relaxed</li>
+          <li data-i18n="dd_modal_tip_pose2">Face the camera directly</li>
+          <li data-i18n="dd_modal_tip_pose3">Full body visible (head to feet)</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-upload-area" id="bodyModalUpload" onclick="document.getElementById('bodyInput').click()">
+      <input type="file" id="bodyInput" accept="image/*" onchange="handleModalUpload(this, 'body')" style="display:none">
+      <button class="mu-remove" onclick="removeModalImage(event, 'body')">&times;</button>
+      <img class="mu-preview" id="bodyModalPreview" alt="Body preview">
+      <div class="mu-icon">&#128100;</div>
+      <p class="mu-text" data-i18n="dd_upload_text_body">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeBodyModal()" data-i18n="dd_modal_cancel">Cancel</button>
+      <button class="mbtn mbtn-save" id="bodySaveBtn" disabled onclick="saveBodyPhoto()" data-i18n="dd_modal_save">Save</button>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="face-analysis.js"></script>

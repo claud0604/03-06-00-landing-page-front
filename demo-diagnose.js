@@ -59,8 +59,79 @@ window.addEventListener('faceanalyzer-state', (e) => {
   }
 });
 
-// ─── FILE HANDLING ───
-function handleFileSelect(input, type) {
+// ─── MODAL: FACE PHOTO ───
+let faceModalDataUrl = null;
+let bodyModalDataUrl = null;
+
+function openFaceModal() {
+  document.getElementById('faceModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Restore preview if already has image
+  if (faceModalDataUrl) {
+    document.getElementById('faceModalPreview').src = faceModalDataUrl;
+    document.getElementById('faceModalUpload').classList.add('has-image');
+    document.getElementById('faceSaveBtn').disabled = false;
+  }
+}
+
+function closeFaceModal() {
+  document.getElementById('faceModal').classList.remove('open');
+  document.body.style.overflow = '';
+  // If not saved, reset modal upload state
+  if (!faceImageLoaded) {
+    faceModalDataUrl = null;
+    document.getElementById('faceInput').value = '';
+    document.getElementById('faceModalPreview').src = '';
+    document.getElementById('faceModalUpload').classList.remove('has-image');
+    document.getElementById('faceSaveBtn').disabled = true;
+  }
+}
+
+function saveFacePhoto() {
+  if (!faceModalDataUrl) return;
+  faceImageLoaded = true;
+  document.getElementById('facePreview').src = faceModalDataUrl;
+  document.getElementById('faceUploadZone').classList.add('has-image');
+  updateSubmitButton();
+  document.getElementById('faceModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── MODAL: BODY PHOTO ───
+function openBodyModal() {
+  document.getElementById('bodyModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (bodyModalDataUrl) {
+    document.getElementById('bodyModalPreview').src = bodyModalDataUrl;
+    document.getElementById('bodyModalUpload').classList.add('has-image');
+    document.getElementById('bodySaveBtn').disabled = false;
+  }
+}
+
+function closeBodyModal() {
+  document.getElementById('bodyModal').classList.remove('open');
+  document.body.style.overflow = '';
+  if (!bodyImageLoaded) {
+    bodyModalDataUrl = null;
+    document.getElementById('bodyInput').value = '';
+    document.getElementById('bodyModalPreview').src = '';
+    document.getElementById('bodyModalUpload').classList.remove('has-image');
+    document.getElementById('bodySaveBtn').disabled = true;
+  }
+}
+
+function saveBodyPhoto() {
+  if (!bodyModalDataUrl) return;
+  bodyImageLoaded = true;
+  document.getElementById('bodyPreview').src = bodyModalDataUrl;
+  document.getElementById('bodyUploadZone').classList.add('has-image');
+  updateSubmitButton();
+  document.getElementById('bodyModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── MODAL: FILE HANDLING ───
+function handleModalUpload(input, type) {
   const file = input.files[0];
   if (!file) return;
 
@@ -75,33 +146,60 @@ function handleFileSelect(input, type) {
     const dataUrl = e.target.result;
 
     if (type === 'face') {
-      faceImageLoaded = true;
-      document.getElementById('facePreview').src = dataUrl;
-      document.getElementById('faceUploadZone').classList.add('has-image');
+      faceModalDataUrl = dataUrl;
+      document.getElementById('faceModalPreview').src = dataUrl;
+      document.getElementById('faceModalUpload').classList.add('has-image');
+      document.getElementById('faceSaveBtn').disabled = false;
     } else {
-      bodyImageLoaded = true;
-      document.getElementById('bodyPreview').src = dataUrl;
-      document.getElementById('bodyUploadZone').classList.add('has-image');
+      bodyModalDataUrl = dataUrl;
+      document.getElementById('bodyModalPreview').src = dataUrl;
+      document.getElementById('bodyModalUpload').classList.add('has-image');
+      document.getElementById('bodySaveBtn').disabled = false;
     }
-
-    updateSubmitButton();
   };
   reader.readAsDataURL(file);
 }
 
+function removeModalImage(event, type) {
+  event.stopPropagation();
+
+  if (type === 'face') {
+    faceModalDataUrl = null;
+    document.getElementById('faceInput').value = '';
+    document.getElementById('faceModalPreview').src = '';
+    document.getElementById('faceModalUpload').classList.remove('has-image');
+    document.getElementById('faceSaveBtn').disabled = true;
+  } else {
+    bodyModalDataUrl = null;
+    document.getElementById('bodyInput').value = '';
+    document.getElementById('bodyModalPreview').src = '';
+    document.getElementById('bodyModalUpload').classList.remove('has-image');
+    document.getElementById('bodySaveBtn').disabled = true;
+  }
+}
+
+// ─── UPLOAD ZONE: REMOVE (from main page) ───
 function removeImage(event, type) {
   event.stopPropagation();
 
   if (type === 'face') {
     faceImageLoaded = false;
+    faceModalDataUrl = null;
     document.getElementById('faceInput').value = '';
     document.getElementById('facePreview').src = '';
     document.getElementById('faceUploadZone').classList.remove('has-image');
+    document.getElementById('faceModalPreview').src = '';
+    document.getElementById('faceModalUpload').classList.remove('has-image');
+    document.getElementById('faceSaveBtn').disabled = true;
   } else {
     bodyImageLoaded = false;
+    bodyModalDataUrl = null;
     document.getElementById('bodyInput').value = '';
     document.getElementById('bodyPreview').src = '';
     document.getElementById('bodyUploadZone').classList.remove('has-image');
+    document.getElementById('bodyModalPreview').src = '';
+    document.getElementById('bodyModalUpload').classList.remove('has-image');
+    document.getElementById('bodySaveBtn').disabled = true;
   }
 
   updateSubmitButton();
@@ -273,6 +371,8 @@ function displayResults(diagnosis) {
 function resetDemo() {
   faceImageLoaded = false;
   bodyImageLoaded = false;
+  faceModalDataUrl = null;
+  bodyModalDataUrl = null;
 
   document.getElementById('faceInput').value = '';
   document.getElementById('bodyInput').value = '';
@@ -280,6 +380,12 @@ function resetDemo() {
   document.getElementById('bodyPreview').src = '';
   document.getElementById('faceUploadZone').classList.remove('has-image');
   document.getElementById('bodyUploadZone').classList.remove('has-image');
+  document.getElementById('faceModalPreview').src = '';
+  document.getElementById('bodyModalPreview').src = '';
+  document.getElementById('faceModalUpload').classList.remove('has-image');
+  document.getElementById('bodyModalUpload').classList.remove('has-image');
+  document.getElementById('faceSaveBtn').disabled = true;
+  document.getElementById('bodySaveBtn').disabled = true;
   document.getElementById('ageInput').value = '';
   document.getElementById('genderSelect').value = '';
   document.getElementById('progressBar').style.width = '0%';
