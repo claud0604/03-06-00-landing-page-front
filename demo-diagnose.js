@@ -509,11 +509,113 @@ function buildLegend() {
   });
 }
 
+// ─── COLOR SWATCHES ───
+function buildColorSwatches() {
+  var container = document.getElementById('colorSwatches');
+  if (!container || !lastFaceAnalysis) return;
+  container.innerHTML = '';
+
+  var items = [
+    { key: 'skin', label: '피부', color: lastFaceAnalysis.skinColor },
+    { key: 'hair', label: '헤어', color: lastFaceAnalysis.hairColor },
+    { key: 'eye', label: '눈', color: lastFaceAnalysis.eyeColor },
+    { key: 'eyebrow', label: '눈썹', color: lastFaceAnalysis.eyebrowColor },
+    { key: 'lip', label: '입술', color: lastFaceAnalysis.lipColor },
+    { key: 'neck', label: '목', color: lastFaceAnalysis.neckColor }
+  ];
+
+  items.forEach(function(item) {
+    if (!item.color) return;
+    var el = document.createElement('div');
+    el.className = 'color-swatch-item';
+
+    var circle = document.createElement('div');
+    circle.className = 'color-swatch-circle';
+    circle.style.backgroundColor = item.color.hex;
+
+    var label = document.createElement('div');
+    label.className = 'color-swatch-label';
+    label.textContent = item.label;
+
+    var value = document.createElement('div');
+    value.className = 'color-swatch-value';
+    if (item.color.lab) {
+      value.textContent = item.color.lab.l + ' / ' + item.color.lab.a + ' / ' + item.color.lab.b;
+    }
+
+    el.appendChild(circle);
+    el.appendChild(label);
+    el.appendChild(value);
+    container.appendChild(el);
+  });
+}
+
+// ─── CONTRAST BARS ───
+var CONTRAST_LEVELS = ['Low', 'Slightly Low', 'Medium', 'Slightly High', 'High'];
+
+function buildContrastBars() {
+  var container = document.getElementById('contrastBars');
+  if (!container || !lastFaceAnalysis || !lastFaceAnalysis.contrast) return;
+  container.innerHTML = '';
+
+  var title = document.createElement('h4');
+  title.textContent = 'Contrast';
+  container.appendChild(title);
+
+  var items = [
+    { label: '피부 ↔ 헤어', value: lastFaceAnalysis.contrast.skinHair },
+    { label: '피부 ↔ 눈', value: lastFaceAnalysis.contrast.skinEye },
+    { label: '피부 ↔ 입술', value: lastFaceAnalysis.contrast.skinLip }
+  ];
+
+  items.forEach(function(item) {
+    if (item.value == null) return;
+
+    var row = document.createElement('div');
+    row.className = 'contrast-bar-item';
+
+    var label = document.createElement('div');
+    label.className = 'contrast-bar-label';
+    label.textContent = item.label + ' (' + item.value + ')';
+
+    var track = document.createElement('div');
+    track.className = 'contrast-bar-track';
+
+    // Map value to position: 0-300 range, clamped
+    var pct = Math.min(100, Math.max(0, (item.value / 300) * 100));
+    var marker = document.createElement('div');
+    marker.className = 'contrast-bar-marker';
+    marker.style.left = pct + '%';
+
+    track.appendChild(marker);
+
+    var scale = document.createElement('div');
+    scale.className = 'contrast-bar-scale';
+    CONTRAST_LEVELS.forEach(function(lvl) {
+      var span = document.createElement('span');
+      span.textContent = lvl;
+      scale.appendChild(span);
+    });
+
+    row.appendChild(label);
+    row.appendChild(track);
+    row.appendChild(scale);
+    container.appendChild(row);
+  });
+}
+
 // ─── DISPLAY RESULTS ───
 function displayResults(diagnosis) {
   // Personal Color
   document.getElementById('resultColorType').textContent = diagnosis.personalColor || '\u2014';
-  document.getElementById('resultColorDetail').textContent = diagnosis.personalColorDetail || '';
+
+  // Extract explanation part only (after ◼︎ 설명)
+  var detail = diagnosis.personalColorDetail || '';
+  var explainIdx = detail.indexOf('◼︎ 설명');
+  if (explainIdx !== -1) {
+    detail = detail.substring(explainIdx);
+  }
+  document.getElementById('resultColorDetail').textContent = detail;
 
   // Face Shape
   document.getElementById('resultFaceType').textContent = diagnosis.faceShape || '\u2014';
@@ -532,6 +634,8 @@ function displayResults(diagnosis) {
 
   // Draw visualizations after step transition
   setTimeout(function() {
+    buildColorSwatches();
+    buildContrastBars();
     drawFaceVisualization();
     if (bodyImageLoaded && lastBodyAnalysis) {
       drawBodyVisualization();
@@ -572,6 +676,8 @@ function resetDemo() {
   bodyCanvas.getContext('2d').clearRect(0, 0, bodyCanvas.width, bodyCanvas.height);
   document.getElementById('bodyCanvasWrap').style.display = 'none';
   document.getElementById('vizLegend').innerHTML = '';
+  document.getElementById('colorSwatches').innerHTML = '';
+  document.getElementById('contrastBars').innerHTML = '';
 
   document.querySelectorAll('.analyzing-step').forEach(el => {
     el.classList.remove('active', 'done');

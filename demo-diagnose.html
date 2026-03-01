@@ -246,6 +246,35 @@
   .result-type { font-family: var(--serif); font-size: 28px; font-weight: 400; margin-bottom: 8px; }
   .result-detail { font-size: 14px; color: var(--text-muted); line-height: 1.8; white-space: pre-line; }
 
+  /* Color swatches */
+  .color-swatches { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 20px; justify-content: center; }
+  .color-swatch-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .color-swatch-circle {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 2px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .color-swatch-label { font-size: 11px; font-weight: 600; color: var(--text); }
+  .color-swatch-value { font-size: 10px; color: var(--text-muted); font-family: var(--mono); }
+
+  /* Contrast bars */
+  .contrast-bars { margin: 16px 0 20px; }
+  .contrast-bars h4 { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 12px; }
+  .contrast-bar-item { margin-bottom: 12px; }
+  .contrast-bar-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .contrast-bar-track {
+    position: relative; height: 8px; border-radius: 4px;
+    background: linear-gradient(to right, #93c5fd, #60a5fa, #facc15, #f97316, #ef4444);
+  }
+  .contrast-bar-marker {
+    position: absolute; top: -4px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--text); border: 2px solid var(--bg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: translateX(-50%);
+  }
+  .contrast-bar-scale {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--text-muted); margin-top: 2px; font-family: var(--mono);
+  }
+
   /* Blurred premium content */
   .blur-section { position: relative; margin-bottom: 20px; }
   .blur-content {
@@ -584,6 +613,8 @@
       <div class="result-card" id="resultColor">
         <h3 data-i18n="dd_result_color_label">Personal Color</h3>
         <div class="result-type" id="resultColorType">—</div>
+        <div class="color-swatches" id="colorSwatches"></div>
+        <div class="contrast-bars" id="contrastBars"></div>
         <p class="result-detail" id="resultColorDetail"></p>
       </div>
 
