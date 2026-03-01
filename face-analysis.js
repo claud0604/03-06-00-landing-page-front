@@ -200,7 +200,7 @@ function colorDist(a, b) {
 }
 
 function makeColorObj(rgb) {
-  return { rgb: rgb, hex: rgbToHex(rgb), hsl: rgbToHsl(rgb) };
+  return { rgb: rgb, hex: rgbToHex(rgb), hsl: rgbToHsl(rgb), lab: rgbToLab(rgb) };
 }
 
 // ─── SEGMENTATION HELPERS ───
@@ -209,33 +209,45 @@ function sampleFromMask(ctx, maskData, maskW, maskH, category, imgW, imgH, maxSa
   maxSamples = maxSamples || 50;
   var scaleX = maskW / imgW;
   var scaleY = maskH / imgH;
-  var candidates = [];
 
-  // Collect all pixels of the target category
+  // Find bounding box of target category
+  var minX = maskW, maxX = 0, minY = maskH, maxY = 0;
+  var count = 0;
   for (var my = 0; my < maskH; my++) {
     for (var mx = 0; mx < maskW; mx++) {
       if (maskData[my * maskW + mx] === category) {
-        candidates.push({ mx: mx, my: my });
+        if (mx < minX) minX = mx;
+        if (mx > maxX) maxX = mx;
+        if (my < minY) minY = my;
+        if (my > maxY) maxY = my;
+        count++;
+      }
+    }
+  }
+  if (count === 0) return null;
+
+  // Grid-based sampling for even spatial distribution
+  var gridSize = Math.ceil(Math.sqrt(maxSamples));
+  var cellW = (maxX - minX + 1) / gridSize;
+  var cellH = (maxY - minY + 1) / gridSize;
+  var samples = [];
+  var samplePoints = [];
+
+  for (var row = 0; row < gridSize && samplePoints.length < maxSamples; row++) {
+    for (var col = 0; col < gridSize && samplePoints.length < maxSamples; col++) {
+      var cx = Math.round(minX + (col + 0.5) * cellW);
+      var cy = Math.round(minY + (row + 0.5) * cellH);
+      if (cx >= 0 && cx < maskW && cy >= 0 && cy < maskH && maskData[cy * maskW + cx] === category) {
+        var imgX = Math.round(cx / scaleX);
+        var imgY = Math.round(cy / scaleY);
+        var color = sampleColor(ctx, imgX, imgY, 1);
+        samples.push(color);
+        samplePoints.push({ x: imgX, y: imgY, color: color });
       }
     }
   }
 
-  if (candidates.length === 0) return null;
-
-  // Evenly sample from candidates
-  var step = Math.max(1, Math.floor(candidates.length / maxSamples));
-  var samples = [];
-  var samplePoints = [];
-
-  for (var i = 0; i < candidates.length && samplePoints.length < maxSamples; i += step) {
-    var c = candidates[i];
-    var imgX = Math.round(c.mx / scaleX);
-    var imgY = Math.round(c.my / scaleY);
-    var color = sampleColor(ctx, imgX, imgY, 1);
-    samples.push(color);
-    samplePoints.push({ x: imgX, y: imgY, color: color });
-  }
-
+  if (samples.length === 0) return null;
   return { avg: avgColors(samples), points: samplePoints };
 }
 
@@ -276,8 +288,8 @@ async function analyzeFace(imgEl) {
     console.warn('[FaceAnalyzer] Segmentation failed, using fallback:', e.message);
   }
 
-  // ── Skin color — 8 points (cheeks, forehead, nose bridge, chin area) ──
-  var skinIdx = [234, 454, 50, 280, 187, 411, 168, 200];
+  // ── Skin color — 10 points (cheeks, forehead L/R, nose bridge, chin area) ──
+  var skinIdx = [234, 454, 50, 280, 187, 411, 168, 200, 70, 300];
   var skinSamples = skinIdx.map(function(i) {
     var px = Math.round(lm[i].x * w);
     var py = Math.round(lm[i].y * h);
@@ -315,18 +327,23 @@ async function analyzeFace(imgEl) {
     hair = avgColors(hairSamples);
   }
 
-  // ── Eyebrow color — 8 points (4 left, 4 right) ──
+  // ── Eyebrow color — sample 8 points, pick 4 darkest (avoids skin-like edges) ──
   var browIdxL = [66, 105, 55, 65];
   var browIdxR = [296, 334, 285, 295];
-  var browSamples = [];
+  var browAllSamples = [];
   browIdxL.concat(browIdxR).forEach(function(i) {
     var px = Math.round(lm[i].x * w);
     var py = Math.round(lm[i].y * h);
     var color = sampleColor(ctx, px, py, 2);
-    samplePoints.eyebrow.push({ x: px, y: py, color: color });
-    browSamples.push(color);
+    var brightness = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+    browAllSamples.push({ x: px, y: py, color: color, brightness: brightness });
   });
-  var eyebrow = avgColors(browSamples);
+  browAllSamples.sort(function(a, b) { return a.brightness - b.brightness; });
+  var browDarkest = browAllSamples.slice(0, 4);
+  browDarkest.forEach(function(s) {
+    samplePoints.eyebrow.push({ x: s.x, y: s.y, color: s.color });
+  });
+  var eyebrow = avgColors(browDarkest.map(function(s) { return s.color; }));
 
   // ── Eye/iris color (iris landmarks: 468 left, 473 right) ──
   var eye = null;
@@ -351,15 +368,18 @@ async function analyzeFace(imgEl) {
   });
   var lip = avgColors(lipSamples);
 
-  // ── Neck color — 3 points below chin (landmark 152) ──
+  // ── Neck color — 3 horizontal points below chin ──
   var chinX = Math.round(lm[152].x * w);
   var chinY = Math.round(lm[152].y * h);
-  var neckOffsets = [20, 30, 40];
+  var jawLX = Math.round(lm[172].x * w);
+  var jawRX = Math.round(lm[397].x * w);
+  var neckY = Math.min(h - 3, chinY + 30);
+  var neckSpread = Math.abs(jawRX - jawLX) * 0.3;
+  var neckXPositions = [Math.round(chinX - neckSpread), chinX, Math.round(chinX + neckSpread)];
   var neckSamples = [];
-  neckOffsets.forEach(function(offset) {
-    var ny = Math.min(h - 3, chinY + offset);
-    var color = sampleColor(ctx, chinX, ny, 3);
-    samplePoints.neck.push({ x: chinX, y: ny, color: color });
+  neckXPositions.forEach(function(nx) {
+    var color = sampleColor(ctx, nx, neckY, 3);
+    samplePoints.neck.push({ x: nx, y: neckY, color: color });
     neckSamples.push(color);
   });
   var neck = avgColors(neckSamples);
@@ -408,7 +428,7 @@ async function analyzeFace(imgEl) {
   var fcH = dist2D(lm[10], lm[152], w, h);
 
   return {
-    skinColor:     Object.assign(makeColorObj(skin), { lab: rgbToLab(skin) }),
+    skinColor:     makeColorObj(skin),
     hairColor:     makeColorObj(hair),
     eyeColor:      eye ? makeColorObj(eye) : null,
     eyebrowColor:  makeColorObj(eyebrow),
