@@ -211,6 +211,14 @@
   .mp-status.error { color: var(--coral); }
 
   /* ─── SUBMIT BTN ─── */
+  /* ─── TEST BUTTON (DEV ONLY) ─── */
+  .test-btn {
+    display: inline-block; padding: 8px 16px; font-size: 12px; font-family: var(--mono);
+    color: var(--coral); background: transparent; border: 1px dashed var(--coral);
+    border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-left: 12px; vertical-align: middle;
+  }
+  .test-btn:hover { background: rgba(199,80,80,0.08); }
+
   .submit-btn {
     display: block; width: 100%; padding: 16px; font-size: 16px; font-weight: 500;
     font-family: var(--sans); background: var(--accent); color: white; border: none;
@@ -247,7 +255,7 @@
   .result-detail { font-size: 14px; color: var(--text-muted); line-height: 1.8; white-space: pre-line; }
 
   /* Color swatches */
-  .color-swatches { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 20px; justify-content: center; }
+  .color-swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; margin: 16px 0 20px; justify-items: center; }
   .color-swatch-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .color-swatch-circle {
     width: 44px; height: 44px; border-radius: 50%;
@@ -507,7 +515,7 @@
 
       <!-- Face Photo -->
       <div class="upload-section">
-        <h3 data-i18n="dd_face_title">Face Photo (Front)</h3>
+        <h3 data-i18n="dd_face_title">Face Photo (Front) <button class="test-btn" onclick="runTestDiagnosis()">TEST</button></h3>
         <p class="upload-hint" data-i18n="dd_face_hint">Front-facing, natural light, bare face, neutral expression</p>
         <div class="upload-zone" id="faceUploadZone" onclick="openFaceModal()">
           <button class="upload-remove" onclick="removeImage(event, 'face')">&times;</button>

@@ -515,11 +515,12 @@ function buildColorSwatches() {
   if (!container || !lastFaceAnalysis) return;
   container.innerHTML = '';
 
+  // Row 1: hair, eyebrow, eye  |  Row 2: skin, lip, neck
   var items = [
-    { key: 'skin', label: '피부', color: lastFaceAnalysis.skinColor },
     { key: 'hair', label: '헤어', color: lastFaceAnalysis.hairColor },
-    { key: 'eye', label: '눈', color: lastFaceAnalysis.eyeColor },
     { key: 'eyebrow', label: '눈썹', color: lastFaceAnalysis.eyebrowColor },
+    { key: 'eye', label: '눈동자', color: lastFaceAnalysis.eyeColor },
+    { key: 'skin', label: '피부', color: lastFaceAnalysis.skinColor },
     { key: 'lip', label: '입술', color: lastFaceAnalysis.lipColor },
     { key: 'neck', label: '목', color: lastFaceAnalysis.neckColor }
   ];
@@ -642,6 +643,42 @@ function displayResults(diagnosis) {
     }
     buildLegend();
   }, 100);
+}
+
+// ─── TEST MODE (DEV ONLY) ───
+function runTestDiagnosis() {
+  // Mock face analysis data
+  lastFaceAnalysis = {
+    skinColor:    { rgb: { r: 220, g: 190, b: 165 }, hex: '#dcbea5', hsl: { h: 28, s: 45, l: 75 }, lab: { l: 78.5, a: 7.2, b: 18.3 } },
+    hairColor:    { rgb: { r: 45, g: 35, b: 30 }, hex: '#2d231e', hsl: { h: 20, s: 20, l: 15 }, lab: { l: 15.1, a: 3.8, b: 7.2 } },
+    eyeColor:     { rgb: { r: 85, g: 60, b: 40 }, hex: '#553c28', hsl: { h: 27, s: 36, l: 24 }, lab: { l: 28.3, a: 8.1, b: 18.5 } },
+    eyebrowColor: { rgb: { r: 55, g: 40, b: 30 }, hex: '#37281e', hsl: { h: 24, s: 29, l: 17 }, lab: { l: 18.2, a: 5.1, b: 10.3 } },
+    lipColor:     { rgb: { r: 180, g: 120, b: 110 }, hex: '#b4786e', hsl: { h: 9, s: 33, l: 57 }, lab: { l: 56.8, a: 20.5, b: 14.2 } },
+    neckColor:    { rgb: { r: 210, g: 185, b: 160 }, hex: '#d2b9a0', hsl: { h: 30, s: 38, l: 73 }, lab: { l: 76.2, a: 5.8, b: 16.9 } },
+    backgroundColor: { rgb: { r: 240, g: 238, b: 235 }, hex: '#f0eeeb' },
+    contrast: { skinHair: 165, skinEye: 120, skinLip: 85, skinNeck: 15 },
+    samplePoints: {
+      skin: [{ x: 200, y: 250, color: { r: 220, g: 190, b: 165 } }],
+      hair: [{ x: 200, y: 80, color: { r: 45, g: 35, b: 30 } }],
+      eye: [{ x: 170, y: 220, color: { r: 85, g: 60, b: 40 } }],
+      eyebrow: [{ x: 170, y: 195, color: { r: 55, g: 40, b: 30 } }],
+      lip: [{ x: 200, y: 300, color: { r: 180, g: 120, b: 110 } }],
+      neck: [{ x: 200, y: 370, color: { r: 210, g: 185, b: 160 } }],
+      background: [{ x: 10, y: 10, color: { r: 240, g: 238, b: 235 } }]
+    }
+  };
+  lastBodyAnalysis = null;
+
+  var mockDiagnosis = {
+    personalColor: 'Autumn Warm Deep',
+    personalColorDetail: '◼︎ 설명\n피부의 따뜻한 황색 톤(a*:+7.2, b*:+18.3)과 깊은 머리카락 색(L*:15.1)이 조합되어 가을 웜 딥 타입으로 진단됩니다.\n\n높은 피부-헤어 대비(165)와 중간 수준의 피부-눈 대비(120)가 특징적이며, 따뜻하고 깊이 있는 컬러가 잘 어울립니다.',
+    faceShape: '타원형 (Oval)',
+    faceShapeDetail: '이마와 턱의 비율이 균형잡혀 있으며, 얼굴 길이가 너비보다 약간 긴 이상적인 타원형입니다.',
+    bodyType: null,
+    bodyTypeDetail: null
+  };
+
+  displayResults(mockDiagnosis);
 }
 
 // ─── RESET ───
