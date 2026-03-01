@@ -289,13 +289,24 @@ async function analyzeFace(imgEl) {
   }
 
   // ── Skin color — 10 points (cheeks, forehead L/R, nose bridge, chin area) ──
-  var skinIdx = [234, 454, 50, 280, 187, 411, 168, 200, 70, 300];
+  var skinIdx = [234, 454, 50, 280, 187, 411, 168, 200];
   var skinSamples = skinIdx.map(function(i) {
     var px = Math.round(lm[i].x * w);
     var py = Math.round(lm[i].y * h);
     var color = sampleColor(ctx, px, py, 4);
     samplePoints.skin.push({ x: px, y: py, color: color });
     return color;
+  });
+  // Forehead L/R: midpoint between eyebrow top (66/296) and forehead top (10)
+  var fhTopY = lm[10].y * h;
+  var fhLX = Math.round(lm[66].x * w);
+  var fhLY = Math.round((lm[66].y * h + fhTopY) / 2);
+  var fhRX = Math.round(lm[296].x * w);
+  var fhRY = Math.round((lm[296].y * h + fhTopY) / 2);
+  [{ x: fhLX, y: fhLY }, { x: fhRX, y: fhRY }].forEach(function(p) {
+    var color = sampleColor(ctx, p.x, p.y, 4);
+    samplePoints.skin.push({ x: p.x, y: p.y, color: color });
+    skinSamples.push(color);
   });
   var skin = avgColors(skinSamples);
 
@@ -374,7 +385,7 @@ async function analyzeFace(imgEl) {
   var jawLX = Math.round(lm[172].x * w);
   var jawRX = Math.round(lm[397].x * w);
   var neckY = Math.min(h - 3, chinY + 30);
-  var neckSpread = Math.abs(jawRX - jawLX) * 0.3;
+  var neckSpread = Math.abs(jawRX - jawLX) * 0.15;
   var neckXPositions = [Math.round(chinX - neckSpread), chinX, Math.round(chinX + neckSpread)];
   var neckSamples = [];
   neckXPositions.forEach(function(nx) {
