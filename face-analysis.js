@@ -176,6 +176,24 @@ function dist2D(p1, p2, w, h) {
   return Math.sqrt(dx*dx+dy*dy);
 }
 
+function rgbToLab(c) {
+  var r = c.r / 255, g = c.g / 255, b = c.b / 255;
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+  var x = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047;
+  var y = (r * 0.2126729 + g * 0.7151522 + b * 0.0721750);
+  var z = (r * 0.0193339 + g * 0.1191920 + b * 0.9503041) / 1.08883;
+  x = x > 0.008856 ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
+  y = y > 0.008856 ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
+  z = z > 0.008856 ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
+  return {
+    l: Math.round((116 * y - 16) * 100) / 100,
+    a: Math.round((500 * (x - y)) * 100) / 100,
+    b: Math.round((200 * (y - z)) * 100) / 100
+  };
+}
+
 function colorDist(a, b) {
   if (!a || !b) return null;
   return Math.round(Math.sqrt((a.r-b.r)**2 + (a.g-b.g)**2 + (a.b-b.b)**2));
@@ -390,7 +408,7 @@ async function analyzeFace(imgEl) {
   var fcH = dist2D(lm[10], lm[152], w, h);
 
   return {
-    skinColor:     makeColorObj(skin),
+    skinColor:     Object.assign(makeColorObj(skin), { lab: rgbToLab(skin) }),
     hairColor:     makeColorObj(hair),
     eyeColor:      eye ? makeColorObj(eye) : null,
     eyebrowColor:  makeColorObj(eyebrow),
