@@ -646,10 +646,29 @@ function displayResults(diagnosis) {
 }
 
 // ─── TEST MODE — Internal Classifier via /api/demo/classify ───
+// 얼굴형 한글 매핑 (Expert 패널과 동일)
+var FACE_SHAPE_KO = {
+  'Oval': '타원형 (Oval)',
+  'Round': '둥근형 (Round)',
+  'Square': '사각형 (Square)',
+  'Oblong': '긴형 (Oblong)',
+  'Heart': '하트형 (Heart)',
+  'Diamond': '다이아몬드형 (Diamond)',
+  'Inverted Triangle': '역삼각형 (Inverted Triangle)'
+};
+
+// 체형 한글 매핑
+var BODY_TYPE_KO = {
+  'Straight': '스트레이트 (Straight)',
+  'Wave': '웨이브 (Wave)',
+  'Natural': '내추럴 (Natural)',
+  'Romantic': '로맨틱 (Romantic)',
+  'Dramatic': '드라마틱 (Dramatic)'
+};
+
 async function runTestDiagnosis() {
-  // If no face photo loaded, run MediaPipe first is needed
   if (!faceImageLoaded) {
-    alert('Upload a face photo first, then click TEST.');
+    alert('얼굴 사진을 먼저 업로드한 후 TEST 버튼을 눌러주세요.');
     return;
   }
 
@@ -660,13 +679,12 @@ async function runTestDiagnosis() {
   }
 
   if (!lastFaceAnalysis || !lastFaceAnalysis.skinColor || !lastFaceAnalysis.skinColor.lab) {
-    alert('Face analysis failed. Please re-upload.');
+    alert('얼굴 분석에 실패했습니다. 사진을 다시 업로드해주세요.');
     return;
   }
 
-  // Open modal with loading state
   openTestModal();
-  document.getElementById('testResultBody').innerHTML = '<p style="color:var(--text-dim);font-size:13px;text-align:center;">Classifying...</p>';
+  document.getElementById('testResultBody').innerHTML = '<p style="color:var(--text-dim);font-size:13px;text-align:center;">분류 중...</p>';
 
   try {
     const response = await fetch(DEMO_API_BASE + '/api/demo/classify', {
@@ -685,7 +703,7 @@ async function runTestDiagnosis() {
     renderTestResult(data.result);
   } catch (err) {
     document.getElementById('testResultBody').innerHTML =
-      '<div class="error-box"><h3>Error</h3><p>' + err.message + '</p></div>';
+      '<div class="error-box"><h3>오류</h3><p>' + err.message + '</p></div>';
   }
 }
 
@@ -736,18 +754,18 @@ function renderTestResult(r) {
 
   var html = '';
 
-  // Personal Color
+  // 퍼스널컬러
   html += '<div class="test-section">';
-  html += '<div class="test-section-title">Personal Color</div>';
-  html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value" style="font-size:16px;">' + pc.type + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">Season</span><span class="test-value">' + pc.season + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(pc.confidence) + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">Hue</span><span class="test-value">' + pc.characteristics.hue + ' (' + pc.characteristics.hueScore + ')</span></div>';
-  html += '<div class="test-row"><span class="test-label">Value</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
-  html += '<div class="test-row"><span class="test-label">Chroma</span><span class="test-value">' + pc.characteristics.chroma + ' (' + pc.characteristics.chromaScore + ')</span></div>';
-  html += '<div class="test-row"><span class="test-label">Contrast</span><span class="test-value">' + pc.characteristics.contrast + ' (' + pc.characteristics.contrastScore + ')</span></div>';
+  html += '<div class="test-section-title">퍼스널컬러</div>';
+  html += '<div class="test-row"><span class="test-label">타입</span><span class="test-value" style="font-size:16px;">' + pc.type + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + confidenceBadge(pc.confidence) + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">색조 (Hue)</span><span class="test-value">' + pc.characteristics.hue + ' (' + pc.characteristics.hueScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">명도 (Value)</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">채도 (Chroma)</span><span class="test-value">' + pc.characteristics.chroma + ' (' + pc.characteristics.chromaScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">대비 (Contrast)</span><span class="test-value">' + pc.characteristics.contrast + ' (' + pc.characteristics.contrastScore + ')</span></div>';
 
-  // Alternates
+  // 후보 타입
   if (pc.alternates && pc.alternates.length) {
     html += '<div style="padding-top:6px;">';
     pc.alternates.forEach(function(alt) {
@@ -757,61 +775,64 @@ function renderTestResult(r) {
   }
   html += '</div>';
 
-  // Debug: skin LAB with color dot
+  // 측정값 (LAB)
   if (pc.debug) {
     html += '<div class="test-section">';
-    html += '<div class="test-section-title">Measurements (LAB)</div>';
+    html += '<div class="test-section-title">측정값 (LAB)</div>';
     var skinLab = { l: pc.debug.skinL, a: pc.debug.skinA, b: pc.debug.skinB };
-    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(skinLab) + '"></span>Skin</span><span class="test-value">' + pc.debug.skinL + ' / ' + pc.debug.skinA + ' / ' + pc.debug.skinB + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Chroma</span><span class="test-value">' + pc.debug.chromaValue + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Contrast (skinHair)</span><span class="test-value">' + pc.debug.contrastValue + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Warm Score</span><span class="test-value">' + pc.debug.warmScore + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Cool Score</span><span class="test-value">' + pc.debug.coolScore + '</span></div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(skinLab) + '"></span>피부</span><span class="test-value">' + pc.debug.skinL + ' / ' + pc.debug.skinA + ' / ' + pc.debug.skinB + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">채도값</span><span class="test-value">' + pc.debug.chromaValue + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">대비 (피부↔헤어)</span><span class="test-value">' + pc.debug.contrastValue + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">웜 점수</span><span class="test-value">' + pc.debug.warmScore + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">쿨 점수</span><span class="test-value">' + pc.debug.coolScore + '</span></div>';
     html += '</div>';
   }
 
-  // Background Correction
+  // 배경색 보정
   if (bg && bg.reasons && bg.reasons.length > 0) {
     html += '<div class="test-section">';
-    html += '<div class="test-section-title">Background Correction</div>';
-    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.original) + '"></span>Original</span><span class="test-value">' + bg.original.l + ' / ' + bg.original.a + ' / ' + bg.original.b + '</span></div>';
-    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.corrected) + '"></span>Corrected</span><span class="test-value">' + bg.corrected.l + ' / ' + bg.corrected.a + ' / ' + bg.corrected.b + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Adjustments</span><span class="test-value">dL=' + bg.adjustments.dL + ' dA=' + bg.adjustments.dA + ' dB=' + bg.adjustments.dB + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + bg.confidence + '</span></div>';
+    html += '<div class="test-section-title">배경색 보정</div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.original) + '"></span>원본</span><span class="test-value">' + bg.original.l + ' / ' + bg.original.a + ' / ' + bg.original.b + '</span></div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.corrected) + '"></span>보정값</span><span class="test-value">' + bg.corrected.l + ' / ' + bg.corrected.a + ' / ' + bg.corrected.b + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">보정량</span><span class="test-value">dL=' + bg.adjustments.dL + ' dA=' + bg.adjustments.dA + ' dB=' + bg.adjustments.dB + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + bg.confidence + '</span></div>';
     bg.reasons.forEach(function(reason) {
       html += '<div class="test-alt">  ' + reason + '</div>';
     });
     html += '</div>';
   }
 
-  // Face Shape
+  // 얼굴형
   if (face) {
+    var faceKo = FACE_SHAPE_KO[face.type] || face.type;
     html += '<div class="test-section">';
-    html += '<div class="test-section-title">Face Shape</div>';
-    html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value">' + face.type + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(face.confidence) + '</span></div>';
+    html += '<div class="test-section-title">얼굴형</div>';
+    html += '<div class="test-row"><span class="test-label">타입</span><span class="test-value">' + faceKo + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + confidenceBadge(face.confidence) + '</span></div>';
     if (face.proportions) {
-      html += '<div class="test-row"><span class="test-label">Forehead</span><span class="test-value">' + face.proportions.foreheadRatio + '</span></div>';
-      html += '<div class="test-row"><span class="test-label">Jaw</span><span class="test-value">' + face.proportions.jawRatio + '</span></div>';
-      html += '<div class="test-row"><span class="test-label">Height</span><span class="test-value">' + face.proportions.heightRatio + '</span></div>';
+      html += '<div class="test-row"><span class="test-label">이마 비율</span><span class="test-value">' + face.proportions.foreheadRatio + '</span></div>';
+      html += '<div class="test-row"><span class="test-label">턱 비율</span><span class="test-value">' + face.proportions.jawRatio + '</span></div>';
+      html += '<div class="test-row"><span class="test-label">세로 비율</span><span class="test-value">' + face.proportions.heightRatio + '</span></div>';
     }
     html += '</div>';
   }
 
-  // Body Type
+  // 체형
   if (body) {
+    var bodyKo = BODY_TYPE_KO[body.type] || body.type;
     html += '<div class="test-section">';
-    html += '<div class="test-section-title">Body Type</div>';
-    html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value">' + body.type + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(body.confidence) + '</span></div>';
+    html += '<div class="test-section-title">체형</div>';
+    html += '<div class="test-row"><span class="test-label">타입</span><span class="test-value">' + bodyKo + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + confidenceBadge(body.confidence) + '</span></div>';
     html += '</div>';
   }
 
-  // Overall Confidence
+  // 종합 신뢰도
+  var strategyKo = { 'internal': '내부 분류기', 'hybrid': '하이브리드', 'gemini': 'Gemini 위임' };
   html += '<div class="test-section">';
-  html += '<div class="test-section-title">Overall</div>';
-  html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(conf.overall) + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">Strategy</span><span class="test-value">' + r.strategy + '</span></div>';
+  html += '<div class="test-section-title">종합</div>';
+  html += '<div class="test-row"><span class="test-label">종합 신뢰도</span><span class="test-value">' + confidenceBadge(conf.overall) + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">전략</span><span class="test-value">' + (strategyKo[r.strategy] || r.strategy) + '</span></div>';
   html += '</div>';
 
   document.getElementById('testResultBody').innerHTML = html;
