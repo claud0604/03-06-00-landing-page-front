@@ -760,6 +760,15 @@ function renderTestResult(r) {
   html += '<div class="test-row"><span class="test-label">타입</span><span class="test-value" style="font-size:16px;">' + pc.type + '</span></div>';
   html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
   html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + confidenceBadge(pc.confidence) + '</span></div>';
+
+  // 웜/쿨 판정 (LAB b* 기준: >2 웜, <-2 쿨, -2~2 뉴트럴)
+  var skinB = pc.debug ? pc.debug.skinB : 0;
+  var wcLabel, wcColor;
+  if (skinB > 2) { wcLabel = 'Warm (웜)'; wcColor = '#e67e22'; }
+  else if (skinB < -2) { wcLabel = 'Cool (쿨)'; wcColor = '#3498db'; }
+  else { wcLabel = 'Neutral (뉴트럴)'; wcColor = '#888'; }
+  html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold;">' + wcLabel + ' (b*=' + skinB + ')</span></div>';
+
   html += '<div class="test-row"><span class="test-label">색조 (Hue)</span><span class="test-value">' + pc.characteristics.hue + ' (' + pc.characteristics.hueScore + ')</span></div>';
   html += '<div class="test-row"><span class="test-label">명도 (Value)</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
   html += '<div class="test-row"><span class="test-label">채도 (Chroma)</span><span class="test-value">' + pc.characteristics.chroma + ' (' + pc.characteristics.chromaScore + ')</span></div>';
