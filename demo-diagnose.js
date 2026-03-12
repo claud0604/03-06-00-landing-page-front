@@ -775,22 +775,18 @@ function renderTestResult(r) {
     };
     var wcColor = tendencyColors[wc.warmCool.tendency] || '#888';
     var wcScore = Math.round(wc.warmCool.score * 100);
+    var coolScore = 100 - wcScore;
     html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold; font-size:16px;">' + wc.warmCool.tendency + ' (' + (tendencyKo[wc.warmCool.tendency] || '') + ')</span></div>';
-    html += '<div class="test-row"><span class="test-label">웜 점수</span><span class="test-value">';
-    html += '<div style="display:inline-flex;align-items:center;gap:6px;width:100%;">';
-    html += '<span style="font-size:11px;color:#3498db;">Cool</span>';
-    html += '<div style="flex:1;height:8px;background:#eee;border-radius:4px;position:relative;">';
-    html += '<div style="width:' + wcScore + '%;height:100%;border-radius:4px;background:linear-gradient(to right,#3498db,#888,#e67e22);"></div>';
-    html += '<div style="position:absolute;left:' + wcScore + '%;top:-3px;width:3px;height:14px;background:#333;border-radius:2px;transform:translateX(-50%);"></div>';
-    html += '</div>';
-    html += '<span style="font-size:11px;color:#e67e22;">Warm</span>';
-    html += '<span style="margin-left:4px;font-weight:bold;">' + wcScore + '%</span>';
+    html += '<div class="test-row"><span class="test-label">웜/쿨 점수</span><span class="test-value">';
+    html += '<div style="display:flex;flex-direction:column;gap:2px;">';
+    html += '<span style="color:#e67e22;font-weight:bold;">웜 ' + wcScore + '%</span>';
+    html += '<span style="color:#3498db;font-weight:bold;">쿨 ' + coolScore + '%</span>';
     html += '</div></span></div>';
 
-    // 2) 시즌
+    // 2) 계절
     var ss = wc.season;
-    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value" style="font-size:16px; font-weight:bold; color:' + (seasonColors[ss.primary] || '#333') + ';">' + ss.primary + ' (' + (seasonKo[ss.primary] || '') + ')</span></div>';
-    html += '<div class="test-row"><span class="test-label">점수</span><span class="test-value"><div style="display:flex;flex-direction:column;gap:3px;width:100%;">';
+    html += '<div class="test-row"><span class="test-label">계절</span><span class="test-value" style="font-size:16px; font-weight:bold; color:' + (seasonColors[ss.primary] || '#333') + ';">' + ss.primary + ' (' + (seasonKo[ss.primary] || '') + ')</span></div>';
+    html += '<div class="test-row"><span class="test-label">계절 점수</span><span class="test-value"><div style="display:flex;flex-direction:column;gap:3px;width:100%;">';
     ['Spring', 'Summer', 'Autumn', 'Winter'].forEach(function(s) {
       var pct = Math.round((ss.scores[s] || 0) * 100);
       html += '<div style="display:flex;align-items:center;gap:4px;">';
@@ -804,7 +800,7 @@ function renderTestResult(r) {
     html += '</div></span></div>';
   } else {
     // fallback
-    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">계절</span><span class="test-value">' + pc.season + '</span></div>';
   }
 
   html += '<div class="test-row"><span class="test-label">명도 (Value)</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
