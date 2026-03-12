@@ -755,21 +755,72 @@ function renderTestResult(r) {
   var html = '';
 
   // 퍼스널컬러
+  var wc = r.warmCoolModule;
   html += '<div class="test-section">';
   html += '<div class="test-section-title">퍼스널컬러</div>';
-  html += '<div class="test-row"><span class="test-label">타입</span><span class="test-value" style="font-size:16px;">' + pc.type + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
-  html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + confidenceBadge(pc.confidence) + '</span></div>';
+  // 시즌: 모듈 결과 사용
+  if (wc) {
+    var seasonColors = { Spring: '#e67e22', Summer: '#3498db', Autumn: '#a0522d', Winter: '#2c3e50' };
+    var seasonKo = { Spring: '봄', Summer: '여름', Autumn: '가을', Winter: '겨울' };
+    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value" style="font-size:16px; font-weight:bold; color:' + (seasonColors[wc.season.primary] || '#333') + ';">' + wc.season.primary + ' (' + (seasonKo[wc.season.primary] || '') + ')</span></div>';
+  } else {
+    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
+  }
 
-  // 웜/쿨 판정 (LAB b* 기준: >2 웜, <-2 쿨, -2~2 뉴트럴)
-  var skinB = pc.debug ? pc.debug.skinB : 0;
-  var wcLabel, wcColor;
-  if (skinB > 2) { wcLabel = 'Warm (웜)'; wcColor = '#e67e22'; }
-  else if (skinB < -2) { wcLabel = 'Cool (쿨)'; wcColor = '#3498db'; }
-  else { wcLabel = 'Neutral (뉴트럴)'; wcColor = '#888'; }
-  html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold;">' + wcLabel + ' (b*=' + skinB + ')</span></div>';
+  // 웜/쿨 판정 (97-module: 5단계 + 4계절)
+  if (wc) {
+    var tendencyColors = {
+      'Warm': '#e67e22', 'Neutral Warm': '#f0a04b',
+      'Neutral': '#888',
+      'Neutral Cool': '#5dade2', 'Cool': '#3498db'
+    };
+    var tendencyKo = {
+      'Warm': '웜', 'Neutral Warm': '뉴트럴 웜',
+      'Neutral': '뉴트럴',
+      'Neutral Cool': '뉴트럴 쿨', 'Cool': '쿨'
+    };
+    var wcColor = tendencyColors[wc.warmCool.tendency] || '#888';
+    var wcScore = Math.round(wc.warmCool.score * 100);
+    html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold;">' + wc.warmCool.tendency + ' (' + (tendencyKo[wc.warmCool.tendency] || '') + ')</span></div>';
+    html += '<div class="test-row"><span class="test-label">웜 점수</span><span class="test-value">';
+    html += '<div style="display:inline-flex;align-items:center;gap:6px;width:100%;">';
+    html += '<span style="font-size:11px;color:#3498db;">Cool</span>';
+    html += '<div style="flex:1;height:8px;background:#eee;border-radius:4px;position:relative;">';
+    html += '<div style="width:' + wcScore + '%;height:100%;border-radius:4px;background:linear-gradient(to right,#3498db,#888,#e67e22);"></div>';
+    html += '<div style="position:absolute;left:' + wcScore + '%;top:-3px;width:3px;height:14px;background:#333;border-radius:2px;transform:translateX(-50%);"></div>';
+    html += '</div>';
+    html += '<span style="font-size:11px;color:#e67e22;">Warm</span>';
+    html += '<span style="margin-left:4px;font-weight:bold;">' + wcScore + '%</span>';
+    html += '</div></span></div>';
+    html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + wc.warmCool.confidence + '</span></div>';
 
-  html += '<div class="test-row"><span class="test-label">색조 (Hue)</span><span class="test-value">' + pc.characteristics.hue + ' (' + pc.characteristics.hueScore + ')</span></div>';
+    // 4계절 점수
+    var ss = wc.season;
+    var seasonColors = { Spring: '#e67e22', Summer: '#3498db', Autumn: '#a0522d', Winter: '#2c3e50' };
+    var seasonKo = { Spring: '봄', Summer: '여름', Autumn: '가을', Winter: '겨울' };
+    html += '<div class="test-row"><span class="test-label">4계절</span><span class="test-value" style="font-weight:bold;color:' + (seasonColors[ss.primary] || '#333') + ';">' + ss.primary + ' (' + (seasonKo[ss.primary] || '') + ') [' + ss.confidence + ']</span></div>';
+    html += '<div class="test-row"><span class="test-label">점수</span><span class="test-value"><div style="display:flex;flex-direction:column;gap:3px;width:100%;">';
+    ['Spring', 'Summer', 'Autumn', 'Winter'].forEach(function(s) {
+      var pct = Math.round((ss.scores[s] || 0) * 100);
+      html += '<div style="display:flex;align-items:center;gap:4px;">';
+      html += '<span style="width:28px;font-size:11px;color:' + seasonColors[s] + ';">' + seasonKo[s] + '</span>';
+      html += '<div style="flex:1;height:6px;background:#eee;border-radius:3px;">';
+      html += '<div style="width:' + pct + '%;height:100%;background:' + seasonColors[s] + ';border-radius:3px;"></div>';
+      html += '</div>';
+      html += '<span style="width:32px;font-size:11px;text-align:right;">' + pct + '%</span>';
+      html += '</div>';
+    });
+    html += '</div></span></div>';
+  } else {
+    // fallback: 기존 b* 기준
+    var skinB = pc.debug ? pc.debug.skinB : 0;
+    var wcLabel, wcFallbackColor;
+    if (skinB > 2) { wcLabel = 'Warm (웜)'; wcFallbackColor = '#e67e22'; }
+    else if (skinB < -2) { wcLabel = 'Cool (쿨)'; wcFallbackColor = '#3498db'; }
+    else { wcLabel = 'Neutral (뉴트럴)'; wcFallbackColor = '#888'; }
+    html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcFallbackColor + '; font-weight:bold;">' + wcLabel + ' (b*=' + skinB + ')</span></div>';
+  }
+
   html += '<div class="test-row"><span class="test-label">명도 (Value)</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
   html += '<div class="test-row"><span class="test-label">채도 (Chroma)</span><span class="test-value">' + pc.characteristics.chroma + ' (' + pc.characteristics.chromaScore + ')</span></div>';
   html += '<div class="test-row"><span class="test-label">대비 (Contrast)</span><span class="test-value">' + pc.characteristics.contrast + ' (' + pc.characteristics.contrastScore + ')</span></div>';
