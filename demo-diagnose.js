@@ -756,19 +756,13 @@ function renderTestResult(r) {
 
   // 퍼스널컬러
   var wc = r.warmCoolModule;
+  var seasonColors = { Spring: '#e67e22', Summer: '#3498db', Autumn: '#a0522d', Winter: '#2c3e50' };
+  var seasonKo = { Spring: '봄', Summer: '여름', Autumn: '가을', Winter: '겨울' };
   html += '<div class="test-section">';
   html += '<div class="test-section-title">퍼스널컬러</div>';
-  // 시즌: 모듈 결과 사용
-  if (wc) {
-    var seasonColors = { Spring: '#e67e22', Summer: '#3498db', Autumn: '#a0522d', Winter: '#2c3e50' };
-    var seasonKo = { Spring: '봄', Summer: '여름', Autumn: '가을', Winter: '겨울' };
-    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value" style="font-size:16px; font-weight:bold; color:' + (seasonColors[wc.season.primary] || '#333') + ';">' + wc.season.primary + ' (' + (seasonKo[wc.season.primary] || '') + ')</span></div>';
-  } else {
-    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
-  }
 
-  // 웜/쿨 판정 (97-module: 5단계 + 4계절)
   if (wc) {
+    // 1) 웜/쿨 (가장 위)
     var tendencyColors = {
       'Warm': '#e67e22', 'Neutral Warm': '#f0a04b',
       'Neutral': '#888',
@@ -781,7 +775,7 @@ function renderTestResult(r) {
     };
     var wcColor = tendencyColors[wc.warmCool.tendency] || '#888';
     var wcScore = Math.round(wc.warmCool.score * 100);
-    html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold;">' + wc.warmCool.tendency + ' (' + (tendencyKo[wc.warmCool.tendency] || '') + ')</span></div>';
+    html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcColor + '; font-weight:bold; font-size:16px;">' + wc.warmCool.tendency + ' (' + (tendencyKo[wc.warmCool.tendency] || '') + ')</span></div>';
     html += '<div class="test-row"><span class="test-label">웜 점수</span><span class="test-value">';
     html += '<div style="display:inline-flex;align-items:center;gap:6px;width:100%;">';
     html += '<span style="font-size:11px;color:#3498db;">Cool</span>';
@@ -792,13 +786,10 @@ function renderTestResult(r) {
     html += '<span style="font-size:11px;color:#e67e22;">Warm</span>';
     html += '<span style="margin-left:4px;font-weight:bold;">' + wcScore + '%</span>';
     html += '</div></span></div>';
-    html += '<div class="test-row"><span class="test-label">신뢰도</span><span class="test-value">' + wc.warmCool.confidence + '</span></div>';
 
-    // 4계절 점수
+    // 2) 시즌
     var ss = wc.season;
-    var seasonColors = { Spring: '#e67e22', Summer: '#3498db', Autumn: '#a0522d', Winter: '#2c3e50' };
-    var seasonKo = { Spring: '봄', Summer: '여름', Autumn: '가을', Winter: '겨울' };
-    html += '<div class="test-row"><span class="test-label">4계절</span><span class="test-value" style="font-weight:bold;color:' + (seasonColors[ss.primary] || '#333') + ';">' + ss.primary + ' (' + (seasonKo[ss.primary] || '') + ') [' + ss.confidence + ']</span></div>';
+    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value" style="font-size:16px; font-weight:bold; color:' + (seasonColors[ss.primary] || '#333') + ';">' + ss.primary + ' (' + (seasonKo[ss.primary] || '') + ')</span></div>';
     html += '<div class="test-row"><span class="test-label">점수</span><span class="test-value"><div style="display:flex;flex-direction:column;gap:3px;width:100%;">';
     ['Spring', 'Summer', 'Autumn', 'Winter'].forEach(function(s) {
       var pct = Math.round((ss.scores[s] || 0) * 100);
@@ -812,13 +803,8 @@ function renderTestResult(r) {
     });
     html += '</div></span></div>';
   } else {
-    // fallback: 기존 b* 기준
-    var skinB = pc.debug ? pc.debug.skinB : 0;
-    var wcLabel, wcFallbackColor;
-    if (skinB > 2) { wcLabel = 'Warm (웜)'; wcFallbackColor = '#e67e22'; }
-    else if (skinB < -2) { wcLabel = 'Cool (쿨)'; wcFallbackColor = '#3498db'; }
-    else { wcLabel = 'Neutral (뉴트럴)'; wcFallbackColor = '#888'; }
-    html += '<div class="test-row"><span class="test-label">웜/쿨</span><span class="test-value" style="color:' + wcFallbackColor + '; font-weight:bold;">' + wcLabel + ' (b*=' + skinB + ')</span></div>';
+    // fallback
+    html += '<div class="test-row"><span class="test-label">시즌</span><span class="test-value">' + pc.season + '</span></div>';
   }
 
   html += '<div class="test-row"><span class="test-label">명도 (Value)</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
