@@ -775,16 +775,22 @@ function renderTestResult(r) {
   }
   html += '</div>';
 
-  // 측정값 (LAB)
+  // 측정값 (3축 + 색상각)
   if (pc.debug) {
     html += '<div class="test-section">';
-    html += '<div class="test-section-title">측정값 (LAB)</div>';
+    html += '<div class="test-section-title">측정값 (3축 + 색상각)</div>';
     var skinLab = { l: pc.debug.skinL, a: pc.debug.skinA, b: pc.debug.skinB };
-    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(skinLab) + '"></span>피부</span><span class="test-value">' + pc.debug.skinL + ' / ' + pc.debug.skinA + ' / ' + pc.debug.skinB + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">채도값</span><span class="test-value">' + pc.debug.chromaValue + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">대비 (피부↔헤어)</span><span class="test-value">' + pc.debug.contrastValue + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">웜 점수</span><span class="test-value">' + pc.debug.warmScore + '</span></div>';
-    html += '<div class="test-row"><span class="test-label">쿨 점수</span><span class="test-value">' + pc.debug.coolScore + '</span></div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(skinLab) + '"></span>피부 LAB</span><span class="test-value">' + pc.debug.skinL + ' / ' + pc.debug.skinA + ' / ' + pc.debug.skinB + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">축1: 피부 명도 (L*)</span><span class="test-value">' + pc.debug.skinL + ' [' + pc.debug.skinLightnessLevel + ']</span></div>';
+    html += '<div class="test-row"><span class="test-label">축2: 피부 채도 √(a²+b²)</span><span class="test-value">' + pc.debug.skinChromaValue + ' [' + pc.debug.skinChromaLevel + ']</span></div>';
+    html += '<div class="test-row"><span class="test-label">축3: 요소 채도 (평균)</span><span class="test-value">' + pc.debug.elemChromaValue + ' [' + pc.debug.elemChromaLevel + '] (' + pc.debug.elemChromaCount + '개)</span></div>';
+    html += '<div class="test-row"><span class="test-label">색상각 atan2(b*,a*)</span><span class="test-value">' + pc.debug.hueAngle + '° → ' + pc.debug.hueTendency + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">웜 점수 / 쿨 점수</span><span class="test-value">' + pc.debug.warmScore + ' / ' + pc.debug.coolScore + '</span></div>';
+    if (pc.debug.allScores) {
+      html += '<div style="padding-top:4px;font-size:11px;color:#888;">';
+      pc.debug.allScores.forEach(function(s) { html += s.type + ': ' + s.score + '&nbsp;&nbsp;'; });
+      html += '</div>';
+    }
     html += '</div>';
   }
 
