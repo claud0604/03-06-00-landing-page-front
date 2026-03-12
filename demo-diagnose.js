@@ -645,40 +645,176 @@ function displayResults(diagnosis) {
   }, 100);
 }
 
-// ─── TEST MODE (DEV ONLY) ───
-function runTestDiagnosis() {
-  // Mock face analysis data
-  lastFaceAnalysis = {
-    skinColor:    { rgb: { r: 220, g: 190, b: 165 }, hex: '#dcbea5', hsl: { h: 28, s: 45, l: 75 }, lab: { l: 78.5, a: 7.2, b: 18.3 } },
-    hairColor:    { rgb: { r: 45, g: 35, b: 30 }, hex: '#2d231e', hsl: { h: 20, s: 20, l: 15 }, lab: { l: 15.1, a: 3.8, b: 7.2 } },
-    eyeColor:     { rgb: { r: 85, g: 60, b: 40 }, hex: '#553c28', hsl: { h: 27, s: 36, l: 24 }, lab: { l: 28.3, a: 8.1, b: 18.5 } },
-    eyebrowColor: { rgb: { r: 55, g: 40, b: 30 }, hex: '#37281e', hsl: { h: 24, s: 29, l: 17 }, lab: { l: 18.2, a: 5.1, b: 10.3 } },
-    lipColor:     { rgb: { r: 180, g: 120, b: 110 }, hex: '#b4786e', hsl: { h: 9, s: 33, l: 57 }, lab: { l: 56.8, a: 20.5, b: 14.2 } },
-    neckColor:    { rgb: { r: 210, g: 185, b: 160 }, hex: '#d2b9a0', hsl: { h: 30, s: 38, l: 73 }, lab: { l: 76.2, a: 5.8, b: 16.9 } },
-    backgroundColor: { rgb: { r: 240, g: 238, b: 235 }, hex: '#f0eeeb' },
-    contrast: { skinHair: 165, skinEye: 120, skinLip: 85, skinNeck: 15 },
-    samplePoints: {
-      skin: [{ x: 200, y: 250, color: { r: 220, g: 190, b: 165 } }],
-      hair: [{ x: 200, y: 80, color: { r: 45, g: 35, b: 30 } }],
-      eye: [{ x: 170, y: 220, color: { r: 85, g: 60, b: 40 } }],
-      eyebrow: [{ x: 170, y: 195, color: { r: 55, g: 40, b: 30 } }],
-      lip: [{ x: 200, y: 300, color: { r: 180, g: 120, b: 110 } }],
-      neck: [{ x: 200, y: 370, color: { r: 210, g: 185, b: 160 } }],
-      background: [{ x: 10, y: 10, color: { r: 240, g: 238, b: 235 } }]
+// ─── TEST MODE — Internal Classifier via /api/demo/classify ───
+async function runTestDiagnosis() {
+  // If no face photo loaded, run MediaPipe first is needed
+  if (!faceImageLoaded) {
+    alert('Upload a face photo first, then click TEST.');
+    return;
+  }
+
+  // Run MediaPipe if not already done
+  if (!lastFaceAnalysis && window.FaceAnalyzer && window.FaceAnalyzer.isReady()) {
+    const faceImg = document.getElementById('facePreview');
+    lastFaceAnalysis = await window.FaceAnalyzer.analyzeFace(faceImg);
+  }
+
+  if (!lastFaceAnalysis || !lastFaceAnalysis.skinColor || !lastFaceAnalysis.skinColor.lab) {
+    alert('Face analysis failed. Please re-upload.');
+    return;
+  }
+
+  // Open modal with loading state
+  openTestModal();
+  document.getElementById('testResultBody').innerHTML = '<p style="color:var(--text-dim);font-size:13px;text-align:center;">Classifying...</p>';
+
+  try {
+    const response = await fetch(DEMO_API_BASE + '/api/demo/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        faceAnalysis: lastFaceAnalysis,
+        bodyAnalysis: lastBodyAnalysis
+      })
+    });
+
+    if (!response.ok) throw new Error('Classify API failed');
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || 'Classification failed');
+
+    renderTestResult(data.result);
+  } catch (err) {
+    document.getElementById('testResultBody').innerHTML =
+      '<div class="error-box"><h3>Error</h3><p>' + err.message + '</p></div>';
+  }
+}
+
+function openTestModal() {
+  document.getElementById('testResultModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTestModal() {
+  document.getElementById('testResultModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function labToCss(lab) {
+  // Approximate LAB to RGB for CSS display
+  if (!lab) return '#888';
+  var l = lab.l, a = lab.a, b = lab.b;
+  var fy = (l + 16) / 116;
+  var fx = a / 500 + fy;
+  var fz = fy - b / 200;
+  var d = 6/29;
+  var xr = fx > d ? fx*fx*fx : (fx - 16/116)*3*d*d;
+  var yr = l > 8 ? fy*fy*fy : l / 903.3;
+  var zr = fz > d ? fz*fz*fz : (fz - 16/116)*3*d*d;
+  var x = xr * 0.95047, y = yr * 1.0, z = zr * 1.08883;
+  var rl = x*3.2406 + y*(-1.5372) + z*(-0.4986);
+  var gl = x*(-0.9689) + y*1.8758 + z*0.0415;
+  var bl = x*0.0557 + y*(-0.2040) + z*1.0570;
+  function g(c) { return c <= 0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055; }
+  var r = Math.round(Math.min(255,Math.max(0,g(rl)*255)));
+  var gr = Math.round(Math.min(255,Math.max(0,g(gl)*255)));
+  var bl2 = Math.round(Math.min(255,Math.max(0,g(bl)*255)));
+  return 'rgb('+r+','+gr+','+bl2+')';
+}
+
+function confidenceBadge(score) {
+  if (score >= 0.75) return '<span class="test-badge test-badge-high">' + score + '</span>';
+  if (score >= 0.50) return '<span class="test-badge test-badge-mid">' + score + '</span>';
+  return '<span class="test-badge test-badge-low">' + score + '</span>';
+}
+
+function renderTestResult(r) {
+  var pc = r.personalColor;
+  var face = r.faceShape;
+  var body = r.bodyType;
+  var bg = r.backgroundCorrection;
+  var conf = r.confidence;
+
+  var html = '';
+
+  // Personal Color
+  html += '<div class="test-section">';
+  html += '<div class="test-section-title">Personal Color</div>';
+  html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value" style="font-size:16px;">' + pc.type + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">Season</span><span class="test-value">' + pc.season + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(pc.confidence) + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">Hue</span><span class="test-value">' + pc.characteristics.hue + ' (' + pc.characteristics.hueScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">Value</span><span class="test-value">' + pc.characteristics.value + ' (' + pc.characteristics.valueScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">Chroma</span><span class="test-value">' + pc.characteristics.chroma + ' (' + pc.characteristics.chromaScore + ')</span></div>';
+  html += '<div class="test-row"><span class="test-label">Contrast</span><span class="test-value">' + pc.characteristics.contrast + ' (' + pc.characteristics.contrastScore + ')</span></div>';
+
+  // Alternates
+  if (pc.alternates && pc.alternates.length) {
+    html += '<div style="padding-top:6px;">';
+    pc.alternates.forEach(function(alt) {
+      html += '<div class="test-alt">  &rarr; ' + alt.type + ' (' + alt.confidence + ')</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Debug: skin LAB with color dot
+  if (pc.debug) {
+    html += '<div class="test-section">';
+    html += '<div class="test-section-title">Measurements (LAB)</div>';
+    var skinLab = { l: pc.debug.skinL, a: pc.debug.skinA, b: pc.debug.skinB };
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(skinLab) + '"></span>Skin</span><span class="test-value">' + pc.debug.skinL + ' / ' + pc.debug.skinA + ' / ' + pc.debug.skinB + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Chroma</span><span class="test-value">' + pc.debug.chromaValue + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Contrast (skinHair)</span><span class="test-value">' + pc.debug.contrastValue + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Warm Score</span><span class="test-value">' + pc.debug.warmScore + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Cool Score</span><span class="test-value">' + pc.debug.coolScore + '</span></div>';
+    html += '</div>';
+  }
+
+  // Background Correction
+  if (bg && bg.reasons && bg.reasons.length > 0) {
+    html += '<div class="test-section">';
+    html += '<div class="test-section-title">Background Correction</div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.original) + '"></span>Original</span><span class="test-value">' + bg.original.l + ' / ' + bg.original.a + ' / ' + bg.original.b + '</span></div>';
+    html += '<div class="test-row"><span class="test-label"><span class="test-color-dot" style="background:' + labToCss(bg.corrected) + '"></span>Corrected</span><span class="test-value">' + bg.corrected.l + ' / ' + bg.corrected.a + ' / ' + bg.corrected.b + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Adjustments</span><span class="test-value">dL=' + bg.adjustments.dL + ' dA=' + bg.adjustments.dA + ' dB=' + bg.adjustments.dB + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + bg.confidence + '</span></div>';
+    bg.reasons.forEach(function(reason) {
+      html += '<div class="test-alt">  ' + reason + '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Face Shape
+  if (face) {
+    html += '<div class="test-section">';
+    html += '<div class="test-section-title">Face Shape</div>';
+    html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value">' + face.type + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(face.confidence) + '</span></div>';
+    if (face.proportions) {
+      html += '<div class="test-row"><span class="test-label">Forehead</span><span class="test-value">' + face.proportions.foreheadRatio + '</span></div>';
+      html += '<div class="test-row"><span class="test-label">Jaw</span><span class="test-value">' + face.proportions.jawRatio + '</span></div>';
+      html += '<div class="test-row"><span class="test-label">Height</span><span class="test-value">' + face.proportions.heightRatio + '</span></div>';
     }
-  };
-  lastBodyAnalysis = null;
+    html += '</div>';
+  }
 
-  var mockDiagnosis = {
-    personalColor: 'Autumn Warm Deep',
-    personalColorDetail: '◼︎ 설명\n피부의 따뜻한 황색 톤(a*:+7.2, b*:+18.3)과 깊은 머리카락 색(L*:15.1)이 조합되어 가을 웜 딥 타입으로 진단됩니다.\n\n높은 피부-헤어 대비(165)와 중간 수준의 피부-눈 대비(120)가 특징적이며, 따뜻하고 깊이 있는 컬러가 잘 어울립니다.',
-    faceShape: '타원형 (Oval)',
-    faceShapeDetail: '이마와 턱의 비율이 균형잡혀 있으며, 얼굴 길이가 너비보다 약간 긴 이상적인 타원형입니다.',
-    bodyType: null,
-    bodyTypeDetail: null
-  };
+  // Body Type
+  if (body) {
+    html += '<div class="test-section">';
+    html += '<div class="test-section-title">Body Type</div>';
+    html += '<div class="test-row"><span class="test-label">Type</span><span class="test-value">' + body.type + '</span></div>';
+    html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(body.confidence) + '</span></div>';
+    html += '</div>';
+  }
 
-  displayResults(mockDiagnosis);
+  // Overall Confidence
+  html += '<div class="test-section">';
+  html += '<div class="test-section-title">Overall</div>';
+  html += '<div class="test-row"><span class="test-label">Confidence</span><span class="test-value">' + confidenceBadge(conf.overall) + '</span></div>';
+  html += '<div class="test-row"><span class="test-label">Strategy</span><span class="test-value">' + r.strategy + '</span></div>';
+  html += '</div>';
+
+  document.getElementById('testResultBody').innerHTML = html;
 }
 
 // ─── RESET ───
