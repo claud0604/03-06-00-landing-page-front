@@ -1,3 +1,30 @@
+// ─── PAYMENT SUCCESS CHECK ───
+(function checkPaymentSuccess() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    window.addEventListener('DOMContentLoaded', function() {
+      var lang = (localStorage.getItem('apl-lang') || navigator.language || 'en').substring(0, 2);
+      var msgs = {
+        en: { title: 'Payment Completed!', desc: 'Thank you for your purchase. Our professional colorist will review your diagnosis and send you the full report via email.', btn: 'OK' },
+        ko: { title: '결제가 완료되었습니다!', desc: '감사합니다. 전문 컬러리스트가 진단을 검토한 후 이메일로 전체 리포트를 보내드립니다.', btn: '확인' },
+        ja: { title: 'お支払いが完了しました！', desc: 'ありがとうございます。専門カラリストが診断を確認後、メールで完全なレポートをお送りします。', btn: '確認' },
+        zh: { title: '付款已完成！', desc: '感谢您的购买。专业色彩师审核后，将通过电子邮件发送完整报告。', btn: '确认' }
+      };
+      var m = msgs[lang] || msgs.en;
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);">' +
+        '<div style="font-size:48px;margin-bottom:16px;">✅</div>' +
+        '<h2 style="margin:0 0 12px;color:#222;">' + m.title + '</h2>' +
+        '<p style="margin:0 0 24px;color:#666;line-height:1.6;">' + m.desc + '</p>' +
+        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:#7c3aed;color:#fff;border:none;padding:12px 40px;border-radius:8px;font-size:16px;cursor:pointer;">' + m.btn + '</button>' +
+        '</div>';
+      document.body.appendChild(overlay);
+    });
+  }
+})();
+
 // ─── CONFIG ───
 const DEMO_API_BASE = 'https://api-030600-landing.apls.kr';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
