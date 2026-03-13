@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Complete — APL COLOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=DM+Mono:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f1ef;
+    --surface: #e9e8e5;
+    --surface2: #dddbd7;
+    --border: rgba(0,0,0,0.09);
+    --text: #1a1916;
+    --text-muted: #5c5a56;
+    --text-dim: #9b9890;
+    --accent: #a07840;
+    --accent2: #c49656;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif KR', serif;
+    --sans: 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', sans-serif;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #2a2a2a;
+    --surface2: #222222;
+    --border: #404040;
+    --text: #e0e0e0;
+    --text-muted: #aaaaaa;
+    --text-dim: #777777;
+    --accent: #c4a484;
+    --accent2: #d4b898;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --bg: #1a1a1a; --surface: #2a2a2a; --surface2: #222222;
+      --border: #404040; --text: #e0e0e0; --text-muted: #aaaaaa;
+      --text-dim: #777777; --accent: #c4a484; --accent2: #d4b898;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .success-container {
+    max-width: 520px;
+    width: 100%;
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+
+  .success-icon svg {
+    width: 40px;
+    height: 40px;
+    stroke: #fff;
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .success-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .success-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  .step-guide {
+    text-align: left;
+    margin-bottom: 32px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-item:last-child {
+    border-bottom: none;
+  }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .step-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .step-text strong {
+    color: var(--text);
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 40px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background 0.2s;
+    margin-bottom: 16px;
+  }
+
+  .cta-btn:hover {
+    background: var(--accent2);
+  }
+
+  .notice {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+
+  .home-link {
+    display: inline-block;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<div class="success-container">
+  <div class="success-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+
+  <h1 class="success-title" data-i18n="ps_title">Payment Completed!</h1>
+  <p class="success-desc" data-i18n="ps_desc">Thank you for your purchase. Please follow the steps below to receive your full diagnosis report.</p>
+
+  <div class="step-guide">
+    <div class="step-item">
+      <span class="step-num">1</span>
+      <span class="step-text" data-i18n="ps_step1"><strong>Enter your information</strong> — Click the button below to provide your details for the diagnosis.</span>
+    </div>
+    <div class="step-item">
+      <span class="step-num">2</span>
+      <span class="step-text" data-i18n="ps_step2"><strong>Professional review</strong> — Our certified colorist will analyze your results in detail.</span>
+    </div>
+    <div class="step-item">
+      <span class="step-num">3</span>
+      <span class="step-text" data-i18n="ps_step3"><strong>Receive your report</strong> — The full diagnosis report will be sent to your email within 24 hours.</span>
+    </div>
+  </div>
+
+  <a href="https://custinfo.apls.kr" class="cta-btn" data-i18n="ps_cta">Enter Customer Information</a>
+
+  <p class="notice" data-i18n="ps_notice">Reports are typically delivered within 24 hours after submitting your information.</p>
+
+  <a href="index.html" class="home-link" data-i18n="ps_home">Back to Home</a>
+</div>
+
+<script src="i18n.js"></script>
+</body>
+</html>
