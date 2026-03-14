@@ -511,7 +511,7 @@
   <div class="ad-sidebar">
     <div class="ad-sidebar-zone" id="adSideLeft">
       <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7742019490000786" data-ad-slot="5593610862" data-ad-format="auto" data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- ad init deferred -->
     </div>
   </div>
 
@@ -591,7 +591,7 @@
       <!-- Ad Zone - Bottom -->
       <div class="ad-zone" id="adZoneBottom" style="margin-top: 32px;">
         <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7742019490000786" data-ad-slot="5593610862" data-ad-format="auto" data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- ad init deferred -->
       </div>
     </div>
 
@@ -615,7 +615,7 @@
       <!-- Ad Zone - During Analysis -->
       <div class="ad-zone" id="adZoneAnalysis">
         <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7742019490000786" data-ad-slot="5593610862" data-ad-format="auto" data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- ad init deferred -->
       </div>
     </div>
 
@@ -733,7 +733,7 @@
       <!-- Ad Zone - Bottom of results -->
       <div class="ad-zone" id="adZoneResultBottom">
         <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7742019490000786" data-ad-slot="5593610862" data-ad-format="auto" data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- ad init deferred -->
       </div>
     </div>
 
@@ -753,7 +753,7 @@
   <div class="ad-sidebar">
     <div class="ad-sidebar-zone" id="adSideRight">
       <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7742019490000786" data-ad-slot="5593610862" data-ad-format="auto" data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- ad init deferred -->
     </div>
   </div>
 
@@ -923,5 +923,25 @@
 <script type="module" src="face-analysis.js"></script>
 <script src="i18n.js"></script>
 <script src="demo-diagnose.js"></script>
+<script>
+// AdSense: 보이는 광고만 초기화, 숨겨진 광고는 나중에 초기화
+(function() {
+  function initVisibleAds() {
+    document.querySelectorAll('ins.adsbygoogle').forEach(function(ad) {
+      if (ad.dataset.adsbygoogleStatus) return; // 이미 초기화됨
+      if (ad.offsetWidth > 0 && ad.offsetHeight > 0) {
+        try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+      }
+    });
+  }
+  // 페이지 로드 후 초기화
+  window.addEventListener('load', initVisibleAds);
+  // 단계 전환 시 새로 보이는 광고 초기화 (MutationObserver)
+  var observer = new MutationObserver(function() {
+    setTimeout(initVisibleAds, 300);
+  });
+  observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
+})();
+</script>
 </body>
 </html>
