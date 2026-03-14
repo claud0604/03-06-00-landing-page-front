@@ -142,6 +142,30 @@ function saveBodyPhoto() {
 }
 
 // ─── MODAL: FILE HANDLING ───
+function useSampleImage(type) {
+  var src = type === 'face' ? 'test-img/test-face-front.png' : 'test-img/test-body-front.png';
+  fetch(src)
+    .then(function(res) { return res.blob(); })
+    .then(function(blob) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        if (type === 'face') {
+          faceModalDataUrl = dataUrl;
+          document.getElementById('faceModalPreview').src = dataUrl;
+          document.getElementById('faceModalUpload').classList.add('has-image');
+          document.getElementById('faceSaveBtn').disabled = false;
+        } else {
+          bodyModalDataUrl = dataUrl;
+          document.getElementById('bodyModalPreview').src = dataUrl;
+          document.getElementById('bodyModalUpload').classList.add('has-image');
+          document.getElementById('bodySaveBtn').disabled = false;
+        }
+      };
+      reader.readAsDataURL(blob);
+    });
+}
+
 function handleModalUpload(input, type) {
   const file = input.files[0];
   if (!file) return;

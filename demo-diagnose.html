@@ -386,10 +386,25 @@
 
   .modal-divider { border: none; border-top: 1px solid var(--border); margin: 8px 24px 16px; }
 
+  .upload-row {
+    display: flex; gap: 16px; margin: 0 24px 16px; justify-content: center;
+  }
+  .upload-row > div { flex: 1; max-width: 50%; }
+  .sample-image-area {
+    border: 2px solid var(--border); border-radius: 12px;
+    text-align: center; cursor: pointer; transition: all 0.3s;
+    background: var(--surface); overflow: hidden; position: relative;
+  }
+  .sample-image-area:hover { border-color: var(--accent); background: var(--warm); }
+  .sample-image-area img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; }
+  .sample-image-area .sample-label {
+    font-size: 12px; color: var(--text-muted); padding: 8px 0; font-weight: 500;
+  }
   .modal-upload-area {
-    margin: 0 24px 16px; border: 2px dashed var(--border); border-radius: 12px;
-    padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s;
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 32px 16px; text-align: center; cursor: pointer; transition: all 0.3s;
     background: var(--surface); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
   .modal-upload-area:hover { border-color: var(--accent); background: var(--warm); }
   .modal-upload-area.has-image { border-style: solid; border-color: var(--accent); padding: 0; }
@@ -409,6 +424,10 @@
     cursor: pointer; z-index: 5; align-items: center; justify-content: center;
   }
   .modal-upload-area.has-image .mu-remove { display: flex; }
+  @media (max-width: 480px) {
+    .upload-row { flex-direction: column; }
+    .upload-row > div { max-width: 100%; }
+  }
 
   .modal-footer {
     display: flex; justify-content: flex-end; gap: 12px;
@@ -784,12 +803,18 @@
 
     <hr class="modal-divider">
 
-    <div class="modal-upload-area" id="faceModalUpload" onclick="document.getElementById('faceInput').click()">
-      <input type="file" id="faceInput" accept="image/*" capture="user" onchange="handleModalUpload(this, 'face')" style="display:none">
-      <button class="mu-remove" onclick="removeModalImage(event, 'face')">&times;</button>
-      <img class="mu-preview" id="faceModalPreview" alt="Face preview">
-      <div class="mu-icon">&#128247;</div>
-      <p class="mu-text" data-i18n="dd_upload_text">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+    <div class="upload-row">
+      <div class="sample-image-area" onclick="useSampleImage('face')">
+        <img src="test-img/test-face-front.png" alt="Sample face">
+        <div class="sample-label" data-i18n="dd_sample_label">Sample Image</div>
+      </div>
+      <div class="modal-upload-area" id="faceModalUpload" onclick="document.getElementById('faceInput').click()">
+        <input type="file" id="faceInput" accept="image/*" capture="user" onchange="handleModalUpload(this, 'face')" style="display:none">
+        <button class="mu-remove" onclick="removeModalImage(event, 'face')">&times;</button>
+        <img class="mu-preview" id="faceModalPreview" alt="Face preview">
+        <div class="mu-icon">&#128247;</div>
+        <p class="mu-text" data-i18n="dd_upload_text">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+      </div>
     </div>
 
     <div class="modal-footer">
@@ -843,12 +868,18 @@
 
     <hr class="modal-divider">
 
-    <div class="modal-upload-area" id="bodyModalUpload" onclick="document.getElementById('bodyInput').click()">
-      <input type="file" id="bodyInput" accept="image/*" onchange="handleModalUpload(this, 'body')" style="display:none">
-      <button class="mu-remove" onclick="removeModalImage(event, 'body')">&times;</button>
-      <img class="mu-preview" id="bodyModalPreview" alt="Body preview">
-      <div class="mu-icon">&#128100;</div>
-      <p class="mu-text" data-i18n="dd_upload_text_body">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+    <div class="upload-row">
+      <div class="sample-image-area" onclick="useSampleImage('body')">
+        <img src="test-img/test-body-front.png" alt="Sample body">
+        <div class="sample-label" data-i18n="dd_sample_label">Sample Image</div>
+      </div>
+      <div class="modal-upload-area" id="bodyModalUpload" onclick="document.getElementById('bodyInput').click()">
+        <input type="file" id="bodyInput" accept="image/*" onchange="handleModalUpload(this, 'body')" style="display:none">
+        <button class="mu-remove" onclick="removeModalImage(event, 'body')">&times;</button>
+        <img class="mu-preview" id="bodyModalPreview" alt="Body preview">
+        <div class="mu-icon">&#128100;</div>
+        <p class="mu-text" data-i18n="dd_upload_text_body">Tap to take photo or <span data-i18n="dd_upload_browse">browse files</span></p>
+      </div>
     </div>
 
     <div class="modal-footer">
