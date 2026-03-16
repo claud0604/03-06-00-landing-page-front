@@ -540,13 +540,14 @@ function buildColorSwatches() {
   container.innerHTML = '';
 
   // Row 1: hair, eyebrow, eye  |  Row 2: skin, lip, neck
+  var t = translations[getCurrentLang()] || translations.en;
   var items = [
-    { key: 'hair', label: '헤어', color: lastFaceAnalysis.hairColor },
-    { key: 'eyebrow', label: '눈썹', color: lastFaceAnalysis.eyebrowColor },
-    { key: 'eye', label: '눈동자', color: lastFaceAnalysis.eyeColor },
-    { key: 'skin', label: '피부', color: lastFaceAnalysis.skinColor },
-    { key: 'lip', label: '입술', color: lastFaceAnalysis.lipColor },
-    { key: 'neck', label: '목', color: lastFaceAnalysis.neckColor }
+    { key: 'hair', label: t.dd_viz_hair || 'Hair', color: lastFaceAnalysis.hairColor },
+    { key: 'eyebrow', label: t.dd_viz_eyebrow || 'Eyebrow', color: lastFaceAnalysis.eyebrowColor },
+    { key: 'eye', label: t.dd_viz_eye || 'Eye', color: lastFaceAnalysis.eyeColor },
+    { key: 'skin', label: t.dd_viz_skin || 'Skin', color: lastFaceAnalysis.skinColor },
+    { key: 'lip', label: t.dd_viz_lip || 'Lip', color: lastFaceAnalysis.lipColor },
+    { key: 'neck', label: t.dd_viz_neck || 'Neck', color: lastFaceAnalysis.neckColor }
   ];
 
   items.forEach(function(item) {
@@ -583,14 +584,16 @@ function buildContrastBars() {
   if (!container || !lastFaceAnalysis || !lastFaceAnalysis.contrast) return;
   container.innerHTML = '';
 
+  var t = translations[getCurrentLang()] || translations.en;
+
   var title = document.createElement('h4');
-  title.textContent = 'Contrast';
+  title.textContent = t.dd_contrast_title || 'Contrast';
   container.appendChild(title);
 
   var items = [
-    { label: '피부 ↔ 헤어', value: lastFaceAnalysis.contrast.skinHair },
-    { label: '피부 ↔ 눈', value: lastFaceAnalysis.contrast.skinEye },
-    { label: '피부 ↔ 입술', value: lastFaceAnalysis.contrast.skinLip }
+    { label: t.dd_contrast_skin_hair || 'Skin ↔ Hair', value: lastFaceAnalysis.contrast.skinHair },
+    { label: t.dd_contrast_skin_eye || 'Skin ↔ Eye', value: lastFaceAnalysis.contrast.skinEye },
+    { label: t.dd_contrast_skin_lip || 'Skin ↔ Lip', value: lastFaceAnalysis.contrast.skinLip }
   ];
 
   items.forEach(function(item) {
@@ -634,9 +637,18 @@ function displayResults(diagnosis) {
   // Personal Color
   document.getElementById('resultColorType').textContent = diagnosis.personalColor || '\u2014';
 
-  // Extract explanation part only (after ◼︎ 설명)
+  // Extract explanation part only (after ◼︎ Description/설명/説明/说明)
   var detail = diagnosis.personalColorDetail || '';
-  var explainIdx = detail.indexOf('◼︎ 설명');
+  var t2 = translations[getCurrentLang()] || translations.en;
+  var descLabel = '◼︎ ' + (t2.dd_section_description || 'Description');
+  var explainIdx = detail.indexOf(descLabel);
+  if (explainIdx === -1) {
+    // fallback: try all language variants
+    ['Description', '설명', '説明', '说明'].some(function(lbl) {
+      var idx = detail.indexOf('◼︎ ' + lbl);
+      if (idx !== -1) { explainIdx = idx; return true; }
+    });
+  }
   if (explainIdx !== -1) {
     detail = detail.substring(explainIdx);
   }

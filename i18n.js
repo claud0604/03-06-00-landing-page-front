@@ -186,6 +186,12 @@ const translations = {
     dd_viz_lip: "Lip",
     dd_viz_neck: "Neck",
     dd_viz_background: "Background",
+    dd_contrast_title: "Contrast",
+    dd_contrast_skin_hair: "Skin ↔ Hair",
+    dd_contrast_skin_eye: "Skin ↔ Eye",
+    dd_contrast_skin_lip: "Skin ↔ Lip",
+    dd_section_measurements: "Measurements (Lab)",
+    dd_section_description: "Description",
   },
 
   ko: {
@@ -374,6 +380,12 @@ const translations = {
     dd_viz_lip: "입술",
     dd_viz_neck: "목",
     dd_viz_background: "배경",
+    dd_contrast_title: "대비",
+    dd_contrast_skin_hair: "피부 ↔ 헤어",
+    dd_contrast_skin_eye: "피부 ↔ 눈",
+    dd_contrast_skin_lip: "피부 ↔ 입술",
+    dd_section_measurements: "측정값 (Lab)",
+    dd_section_description: "설명",
   },
 
   ja: {
@@ -562,6 +574,12 @@ const translations = {
     dd_viz_lip: "唇",
     dd_viz_neck: "首",
     dd_viz_background: "背景",
+    dd_contrast_title: "コントラスト",
+    dd_contrast_skin_hair: "肌 ↔ 髪",
+    dd_contrast_skin_eye: "肌 ↔ 瞳",
+    dd_contrast_skin_lip: "肌 ↔ 唇",
+    dd_section_measurements: "測定値 (Lab)",
+    dd_section_description: "説明",
   },
 
   zh: {
@@ -750,6 +768,12 @@ const translations = {
     dd_viz_lip: "嘴唇",
     dd_viz_neck: "脖子",
     dd_viz_background: "背景",
+    dd_contrast_title: "对比度",
+    dd_contrast_skin_hair: "皮肤 ↔ 头发",
+    dd_contrast_skin_eye: "皮肤 ↔ 瞳孔",
+    dd_contrast_skin_lip: "皮肤 ↔ 嘴唇",
+    dd_section_measurements: "测量值 (Lab)",
+    dd_section_description: "说明",
   }
 };
 
